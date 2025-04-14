@@ -44,7 +44,7 @@ public class ConnectionPoolConfig{
         //加载配置文件
         ClassLoader classLoader = ConnectionPoolConfig.class.getClassLoader();
         //定义输入流(maven中只有这种模式（？）)
-        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("db.properties");
+        InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream("dp.properties");
         prop.load(inputStream);
         //获取配置文件中定义的数据源
         for (Object o : prop.keySet()) {

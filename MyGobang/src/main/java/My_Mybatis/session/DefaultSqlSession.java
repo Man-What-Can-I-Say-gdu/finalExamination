@@ -17,7 +17,8 @@ public class DefaultSqlSession implements SqlSession{
     @Override
     public <E> List<E> selectList(String statementId, Object... parms) throws Exception {
         SimpleExecute simpleExecute = new SimpleExecute();
-        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get(statementId);
+        //mappedStatement为空
+        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get((configuration.getNamespace()+statementId));
         List<Object> list = simpleExecute.query(mappedStatement, parms);
         return (List<E>) list;
     }
@@ -37,8 +38,9 @@ public class DefaultSqlSession implements SqlSession{
     @Override
     public <E> E insert(String statementId, Object... parms) throws Exception {
         SimpleExecute simpleExecute = new SimpleExecute();
-        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get(statementId);
-        List<Object> list =  simpleExecute.query(mappedStatement, parms);
+        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get(configuration.getNamespace()+"."+statementId);
+        //
+        List<Object> list = simpleExecute.query(mappedStatement, parms);
         if(list.size()>0){
             return (E) list.get(0);
         }else{
@@ -49,7 +51,7 @@ public class DefaultSqlSession implements SqlSession{
     @Override
     public <E> E update(String statementId, Object... parms) throws Exception {
         SimpleExecute simpleExecute = new SimpleExecute();
-        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get(statementId);
+        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get(configuration.getNamespace()+"."+statementId);
         List<Object> list =  simpleExecute.query(mappedStatement, parms);
         if(list.size()>0){
             return (E) list.get(0);
@@ -61,7 +63,7 @@ public class DefaultSqlSession implements SqlSession{
     @Override
     public <E> E delete(String statementId, Object... parms) throws Exception {
         SimpleExecute simpleExecute = new SimpleExecute();
-        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get(statementId);
+        MappedStatement mappedStatement = this.configuration.getMappedStatementMap().get(configuration.getNamespace()+"."+statementId);
         List<Object> list =  simpleExecute.query(mappedStatement, parms);
         if(list.size()>0){
             return (E) list.get(0);
@@ -83,6 +85,10 @@ public class DefaultSqlSession implements SqlSession{
                 String statementId = className+"."+methodName;
                 //获取方法被调用后的返回值类型
                 Type genericReturnType = method.getGenericReturnType();
+                //方法的参数类型
+                Type[] genericParameterTypes = method.getGenericParameterTypes();
+                //i为0时为id，此时恒为String，我们只需要第二个及以后的参数
+                configuration.getMappedStatementMap().get(statementId).setParameterType(String.valueOf(genericParameterTypes[1]));
                 MappedStatement mappedStatement = configuration.getMappedStatementMap().get(statementId);
                 if("insert".equals(mappedStatement.getSqlType())){
                     return insert(statementId,args);

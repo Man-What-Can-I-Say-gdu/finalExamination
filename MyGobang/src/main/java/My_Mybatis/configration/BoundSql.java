@@ -13,6 +13,8 @@ public class BoundSql {
     private List<String> parameterMappingList= new ArrayList<String>();
 
     public BoundSql(String sql, List<String> parameterMappings) {
+        this.sqlText = sql;
+        this.parameterMappingList = parameterMappings;
     }
 
     public String getSqlText() {

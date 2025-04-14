@@ -4,14 +4,12 @@ import DataBasePool.ConnectionPool;
 import My_Mybatis.configration.BoundSql;
 import My_Mybatis.configration.Configuration;
 import My_Mybatis.configration.MappedStatement;
+import com.pumpkin.entity.User;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
+import java.sql.*;
 import java.util.*;
 
 public class SimpleExecute implements Execute{
@@ -29,10 +27,11 @@ public class SimpleExecute implements Execute{
         //获取要执行的SQL语句
         //得到原始sql语句
         String sql = mappedStatement.getSql();
-        //SQL语句的转换（替换占位符）
+        //SQL语句的转换（替换占位符）//未获取正确的sql
         BoundSql boundSql = this.getBoundSql(sql);
         assert connection != null;
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
+
         String parameterType = mappedStatement.getParameterType();
         Class<?> parameterTypeClass = this.getClassType(parameterType);
         //获取SQL语句的参数集合
@@ -49,7 +48,9 @@ public class SimpleExecute implements Execute{
         //执行sql
         String id = mappedStatement.getId();
         ResultSet resultSet = null;
+        //sqlType==null
         if("insert".equals(mappedStatement.getSqlType())||"update".equals(mappedStatement.getSqlType())||"delete".equals(mappedStatement.getSqlType())){
+            //You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
             Integer result = preparedStatement.executeUpdate();
             List<Integer> resultList = new ArrayList<Integer>();
             resultList.add(result);
@@ -92,7 +93,7 @@ public class SimpleExecute implements Execute{
      */
     public Class<?> getClassType(String parameterType) throws ClassNotFoundException {
         if(parameterType!=null){
-            return Class.forName(parameterType);
+            return Class.forName("com.pumpkin.entity.User");
         }
         return null;
     }
@@ -102,12 +103,14 @@ public class SimpleExecute implements Execute{
      * @param sql 原生sql
      * @return 解析后的sql
      */
-    private BoundSql getBoundSql(String sql) {
+    private BoundSql getBoundSql(String sql) throws SQLException {
+        //获取占位符所在的位置
         this.parserSql(sql);
-        Set<Map.Entry<Integer,Integer>> entries = map.entrySet();
+        Set<Map.Entry<Integer,Integer>> entries = this.map.entrySet();
         for (Map.Entry<Integer,Integer> entry : entries) {
             Integer key = entry.getKey()+2;
             Integer value = entry.getValue();
+            //获取填充的字段名
             parameterMappings.add(sql.substring(key,value));
         }
         for(String s : parameterMappings){
@@ -115,19 +118,25 @@ public class SimpleExecute implements Execute{
         }
         return new BoundSql(sql,parameterMappings);
     }
-    private void parserSql(String sql) {
-        int openIndex = sql.indexOf("#{",findPosition);
-        if(openIndex!=-1){
-            //有占位符
-            int endIndex = sql.indexOf("}",findPosition+1);
-            if(endIndex!=-1){
-                map.put(openIndex,endIndex);
-                findPosition = endIndex+1;
-                parserSql(sql);
+
+    /**
+     * 获取占位符所在的索引
+     * @param sql
+     */
+    private void parserSql(String sql) throws SQLException {
+        int openIndex=0,closeIndex=0;
+        while((openIndex = sql.indexOf("#{",findPosition))!=-1){
+            //存在#{占位符
+            if((closeIndex = sql.indexOf("}",findPosition+1))!= -1){
+                //存在}闭合,将位置信息传入map
+                this.map.put(openIndex,closeIndex);
+                findPosition=closeIndex+1;
             }else{
-                System.out.println("SQL语句中参数错误");
+                //不存在闭合，抛出错误
+                throw new SQLException("SQL格式错误");
             }
         }
+
     }
 
 }

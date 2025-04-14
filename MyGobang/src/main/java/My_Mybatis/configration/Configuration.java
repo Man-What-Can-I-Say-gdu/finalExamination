@@ -20,6 +20,15 @@ public class Configuration {
      */
     Map<String,MappedStatement> mappedStatementMap=new HashMap<String,MappedStatement>();
 
+    private String Namespace;
+
+    public String getNamespace() {
+        return Namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        Namespace = namespace;
+    }
 
     public Configuration() {
     }

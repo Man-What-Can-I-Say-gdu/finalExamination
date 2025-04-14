@@ -44,6 +44,8 @@ public class XmlMapperBuilder {
         Attribute attributeNamespace = rootElement.attribute("namespace");
         //com.bruce.mapper.UserMapper
         String namespace = attributeNamespace.getValue();
+        //获取namespace
+        configuration.setNamespace(namespace);
         //xpath解析，解析xml配置文件
         List<Element> selectList = rootElement.selectNodes("//select");
         List<Element> insertList = rootElement.selectNodes("//insert");
@@ -56,6 +58,7 @@ public class XmlMapperBuilder {
         allList.addAll(deleteList);
         allList.addAll(updateList);
         for (Element element : allList) {
+            //未对sqlType进行处理
             //获取SQL的id属性值
             String id = element.attributeValue("id");
             //获取返回值类型
@@ -64,12 +67,15 @@ public class XmlMapperBuilder {
             String parameterType = element.attributeValue("parameterType");
             //获取每个mapper节点中的SQL语句
             String sqlText = element.getTextTrim();
+            //获取sqlType
+            String sqlType = sqlText.split(" ")[0];
             //封装对象
             MappedStatement mappedStatement = new MappedStatement();
             mappedStatement.setId(id);
             mappedStatement.setParameterType(parameterType);
             mappedStatement.setResultType(resultType);
             mappedStatement.setSql(sqlText);
+            mappedStatement.setSqlType(sqlType);
             //key为namespace+.+id
             String key = namespace+"."+id;
             configuration.getMappedStatementMap().put(key, mappedStatement);

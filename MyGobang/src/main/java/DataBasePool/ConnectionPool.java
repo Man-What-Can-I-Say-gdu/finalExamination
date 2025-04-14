@@ -42,6 +42,15 @@ public class ConnectionPool implements DataSource {
             TimeCheck();
         }
     }
+    static {
+        try {
+            InitConnectionPool();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
     //从连接池中获取Connection对象
     //判断连接池中是否还有空闲对象，如果没有就再判断是否可以新建
     public static synchronized  Connection GetConnection() throws Exception {
