@@ -43,13 +43,13 @@ public class UserDaoImp implements UserMapper {
 
 
     @Override
-    public boolean updatePhone(User user) {
+    public boolean updatePhone(User user, String phoneNumber) {
         //修改手机号的功能在登录后才可以使用，此时已经获得了用户的所有数据
         String updateSQL = "update user set phonenumber=? where id=?";
         try {
             Connection connection = ConnectionPool.GetConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(updateSQL);
-            preparedStatement.setString(1, user.getPhoneNumber());
+            preparedStatement.setString(1, phoneNumber);
             preparedStatement.setInt(2, user.getId());
             int result = preparedStatement.executeUpdate();
             preparedStatement.close();
@@ -61,12 +61,12 @@ public class UserDaoImp implements UserMapper {
     }
 
     @Override
-    public boolean updateEmail(User user) {
+    public boolean updateEmail(User user,String email) {
         String updateSQL = "update user set email=? where id=?";
         try {
             Connection connection = ConnectionPool.GetConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(updateSQL);
-            preparedStatement.setString(1, user.getEmail());
+            preparedStatement.setString(1, email);
             preparedStatement.setInt(2, user.getId());
             int result = preparedStatement.executeUpdate();
             preparedStatement.close();
@@ -167,13 +167,13 @@ public class UserDaoImp implements UserMapper {
     }
 
     @Override
-    public boolean updateUserAfterLogin(User user) {
+    public boolean updateUserAfterLogin(User user,String password) {
         String SQL = "update user set password=? where id=?";
         try {
             Connection connection = ConnectionPool.GetConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(SQL);
             //进行数据加密
-            String password = BCrypt.hashpw(user.getPassword(),BCrypt.gensalt(15));
+            password = BCrypt.hashpw(password,BCrypt.gensalt(15));
             preparedStatement.setString(1, password);
             preparedStatement.setInt(2, user.getId());
             int result = preparedStatement.executeUpdate();

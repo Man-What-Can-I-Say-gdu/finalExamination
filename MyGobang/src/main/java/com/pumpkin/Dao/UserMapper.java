@@ -15,13 +15,13 @@ public interface UserMapper {
      * 实现修改手机号功能
      * @param user 修改的账号
      */
-    boolean updatePhone(User user);
+    boolean updatePhone(User user, String phoneNumber);
 
     /**
      * 实现修改邮箱
      * @param user 修改的账号
      */
-    boolean updateEmail(User user);
+    boolean updateEmail(User user,String email);
 
     /**
      * 实现登录功能
@@ -51,5 +51,5 @@ public interface UserMapper {
      * 实现登录后修改密码
      * @param user 登录的用户
      */
-    boolean updateUserAfterLogin(User user);
+    boolean updateUserAfterLogin(User user,String password);
 }
