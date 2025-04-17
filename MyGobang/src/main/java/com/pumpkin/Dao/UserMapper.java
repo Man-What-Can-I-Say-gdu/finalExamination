@@ -52,4 +52,12 @@ public interface UserMapper {
      * @param user 登录的用户
      */
     boolean updateUserAfterLogin(User user,String password);
+
+
+    /**
+     * 将盐加密后存放到数据库
+     */
+    boolean updateUserSalt(int id);
+
+
 }

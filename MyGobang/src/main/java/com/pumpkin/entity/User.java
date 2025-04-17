@@ -1,23 +1,49 @@
 package com.pumpkin.entity;
 
+import java.util.Arrays;
+
 public class User {
     private int id;
     private String name;
     private String password;
     private String email;
     private String phoneNumber;
+    private byte[] salt;
 
+
+    @Override
+    public String toString() {
+        return "User{" +
+                "email='" + email + '\'' +
+                ", id=" + id +
+                ", name='" + name + '\'' +
+                ", password='" + password + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                ", salt=" + Arrays.toString(salt) +
+                '}';
+    }
+
+    public byte[] getSalt() {
+        return salt;
+    }
+
+    public void setSalt(byte[] salt) {
+        this.salt = salt;
+    }
+
+    public User(String email, int id, String name, String password, String phoneNumber, byte[] salt) {
+        this.email = email;
+        this.id = id;
+        this.name = name;
+        this.password = password;
+        this.phoneNumber = phoneNumber;
+        this.salt = salt;
+    }
 
     public User() {
     }
 
-    public User(int id, String name, String password, String email, String phoneNumber) {
-        this.id = id;
-        this.name = name;
-        this.password = password;
-        this.email = email;
-        this.phoneNumber = phoneNumber;
-    }
+
 
     public int getId() {
         return id;

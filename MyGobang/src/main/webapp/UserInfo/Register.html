@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+</head>
+<body>
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+
+
+
+
+<div id="RegisterWindow">
+    <el-col :span="8">
+        <el-card  class="RegisterWindow" header="RegisterWindow" body-style="10px">
+            <div slot="header" class="clearfix">
+                <h2> <span>注册界面</span></h2>
+            </div>
+            <div class="RegisterSelection">
+                <el-form :model="RegisterUser" :rules="RegisterRules" ref="RegisterUser" label-width="100px" class="RegisterWindow" action="action" method="post">
+
+                    <!--登录界面-->
+                    <!--用户名输入-->
+                    <el-form-item label="用户名" prop="name">
+                        <el-input v-model="RegisterUser.name" size="middle" label="请输入用户名"></el-input>
+                    </el-form-item>
+                    <!--手机号-->
+                    <el-form-item label="手机号码" prop="phoneNumber">
+                        <el-input v-model="RegisterUser.phoneNumber" label="请输入手机号码"></el-input>
+                    </el-form-item>
+                    <!--邮箱-->
+                    <el-form-item label="邮箱" prop="email">
+                        <el-input v-model="RegisterUser.email" label="输入密码"></el-input>
+                    </el-form-item>
+                    <!--密码-->
+                    <el-form-item label="密码" prop="password">
+                        <el-input  v-model="RegisterUser.password" show-password label="输入密码"></el-input>
+                    </el-form-item>
+                    <!--确认密码-->
+                    <el-form-item label="确认密码" prop="judgepassword" >
+                        <el-input  v-model="RegisterUser.judgepassword" show-password label="重新输入以确认密码"></el-input>
+                    </el-form-item>
+                    <
+                    <!--提交数据-->
+                    <el-form-item>
+                        <el-button type="primary" @click="SubmitRegister('RegisterUser')">注册用户</el-button>
+                        <el-button type="warning" @click="resetForm(RegisterUser)">重置数据</el-button>
+                    </el-form-item>
+                    <!--超链接实现跳转-->
+                    <el-link type="primary" href="Login.html">已有账号？一键跳转登录</el-link>
+                </el-form>
+            </div>
+        </el-card>
+    </el-col>
+</div>
+</body>
+<script>
+    new Vue({
+        el:"#RegisterWindow",
+        data(){
+            let validatePass2 = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请再次输入密码'));
+                } else if (value !== this.RegisterUser.password) {
+                    callback(new Error('两次输入密码不一致!'));
+                } else {
+                    callback();
+                }
+            }
+            return{
+                RegisterUser:{
+                    name:'',
+                    password:'',
+                    phoneNumber:'',
+                    passwordRejudge:'',
+                    judegepassword:'',
+                    email:''
+                },
+
+                RegisterRules:{
+                    name:[
+                        { required: true, message:'请输入注册的用户名',trigger:'blur'},
+                        { min: 0 ,max: 10 ,message: '注册的用户名长度小于10个字符' ,trigger:'blur'}
+                    ],
+                    password:[
+                        { required:true, message:'请输入密码',trigger:'blur'},
+                        { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
+                    ],
+                    email:[
+                        {required:true, message:'请输入邮箱号',trigger:'blur'},
+                        {
+                            pattern: /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+                            message: '请输入正确的邮箱号',
+                            trigger: 'blur'
+                        }
+
+                    ],
+                    phoneNumber:[
+                        { required:true , message:"请输入手机号码",trigger:'blur'},
+                        { pattern:/^\d{11}$/ , message: '请输入正确的手机号',trigger: 'blur'}
+                    ],
+                    judgepassword:[
+                        { required:true, message:'请再次输入密码',trigger:'blur'},
+                        { validator: validatePass2,trigger: ['blur','change'],required: true}
+                    ]
+                }
+            }
+
+        },
+        methods: {
+            SubmitRegister() {
+                this.$refs.RegisterUser.validate((valid) => {
+                    if (valid) {
+                        axios.post('http://localhost:8080/MyGobang/User/Register',
+                            {
+                                name: this.RegisterUser.name,
+                                password: this.RegisterUser.password,
+                                phoneNumber: this.RegisterUser.phonenumber,
+                                email:this.RegisterUser.email
+                            },
+                            {
+                                headers: {'Content-Type': 'application/json'}
+                            }).then(response => {
+                            if (response.data.success) {
+                                //注册成功的情况
+                                alert("注册成功，点击确认跳转登录界面！")
+                                //跳转至登录界面
+                                window.open('Login.html','_self')
+                            } else {
+                                //注册失败的情况
+                                alert("注册失败");
+                            }
+                        }).catch(err => {
+                            console.error(err);
+                            if (err.response) {
+                                //答应请求失败的原因
+                                alert(`请求失败：${err.response.status} ${err.response.data.message}||'服务器错误'}`)
+                            }else if(err.request){
+                                alert("请求未收到响应，请检查网络")
+                            }else{
+                                alert("请求配置错误");
+                            }
+                        })
+                    }else{
+                        console.log('输入格式错误');
+                        return false;
+                    }
+                });
+            },
+            resetForm(RegisterUser) {
+                this.$refs.RegisterUser.resetField();
+            }
+        }
+    })
+
+</script>
+</html>

@@ -7,11 +7,24 @@ import com.pumpkin.entity.User;
 import java.util.ArrayList;
 
 public class UserServiceImp implements UserService {
-    UserDaoImp userDaoImp;
+    private UserDaoImp userDaoImp = new UserDaoImp();
+
+    public UserServiceImp(UserDaoImp userDaoImp) {
+        this.userDaoImp = userDaoImp;
+    }
+
     public UserServiceImp() {}
+
     @Override
     public boolean Register(User user) {
-        return userDaoImp.insertUser(user);
+        if(userDaoImp.selectUserByName(user.getName())==null) {
+            boolean result = userDaoImp.insertUser(user);
+            if (result) {
+                userDaoImp.updateUserSalt(user.getId());
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -47,5 +60,12 @@ public class UserServiceImp implements UserService {
     @Override
     public User selectUserByName(String name) {
         return userDaoImp.selectUserByName(name);
+    }
+
+    public byte[] getUserSalt(int id){
+        return userDaoImp.getSalt(id);
+    }
+    public boolean updateUserSalt(int id) {
+        return userDaoImp.updateUserSalt(id);
     }
 }

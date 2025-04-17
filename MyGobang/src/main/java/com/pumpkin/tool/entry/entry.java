@@ -13,6 +13,8 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 
@@ -38,13 +40,13 @@ public class entry {
 
     /**
      * 对传入的数据进行加密，此处只对用户的id进行加密，不设置保存时间
-     * @param id 用户id
+     * @param info 用户id
      * @param key 密钥
      * @return 加密后的字符串
      */
-    public static String encryUserInfo(int id,byte[] key,String algorithm,boolean cbc) throws Exception {
+    public static String encryUserInfo(String info,byte[] key,String algorithm,boolean cbc) throws Exception {
         // 根据加密类型判断key字节数
-        String UserInfo = gerInfoString(id,key);
+        String UserInfo = gerInfoString(info,key);
         //CBC模式
         String transformation = cbc? algorithm+ "CBC" : algorithm;
         //获取加密对象
@@ -61,9 +63,9 @@ public class entry {
         //加密并返回
         return Base64.encode(cipher.doFinal(UserInfo.getBytes()));
     }
-    public static String gerInfoString(int id,byte[] key){
+    public static String gerInfoString(String info,byte[] key){
         //获取InfoString
-        return "key="+ Arrays.toString(key) +"&id="+id+"&starttime="+System.currentTimeMillis();
+        return "key="+ Arrays.toString(key) +"&info="+info+"&starttime="+System.currentTimeMillis();
     }
 
     /**
@@ -97,7 +99,7 @@ public class entry {
      * @param key 密钥
      * @return 加密后的字符串
      */
-    public static String hamcsha256(String plainStr,byte[] key){
+    public static String getSignature(String plainStr,byte[] key,String header){
         //将java字符串形式的密钥转化为java加密标准密钥对象
         SecretKeySpec secretKeySpec = new SecretKeySpec(key, "HmacSHA256");
         //初始化mac实例
@@ -109,7 +111,7 @@ public class entry {
             throw new RuntimeException(e);
         }
         //计算hmac签名
-        byte[] digest = mac.doFinal(plainStr.getBytes(StandardCharsets.UTF_8));
+        byte[] digest = mac.doFinal((header+"."+plainStr).getBytes(StandardCharsets.UTF_8));
         //转化为16进制字符串
         return byte2HexStr(digest);
     }
@@ -148,9 +150,16 @@ public class entry {
         return salt;
     }
 
-
-
-
+    /**
+     * 设置token头
+     */
+    public static Map<String,Object> getTokenHeader(int id){
+        Map<String,Object> map = new HashMap<>();
+        map.put("algorithm","HmacSHA256");
+        map.put("typ","jwt");
+        map.put("id",id);
+        return map;
+    }
 
 
 }

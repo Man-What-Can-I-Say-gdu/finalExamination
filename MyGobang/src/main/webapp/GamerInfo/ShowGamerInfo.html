@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ShowGamerInfo</title>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="https://unpkg.com/vue-router@3/dist/vue-router.js"></script>
+
+
+
+<div id="ShowGamerInfo">
+    <!--使用导航菜单进行总界面的跳转-->
+    <el-menu :default-active="$route.path"
+             class="GamerInfoPresent"
+             mode="horizontal"
+             router
+             @select="handleSelect"
+    >
+        <el-menu-item index="/showGamerInfo">玩家信息</el-menu-item>
+        <el-menu-item index="/showSeasonInfo">赛季战绩</el-menu-item>
+        <el-menu-item index="/showSumInfo">全部战绩</el-menu-item>
+    </el-menu>
+    <!-- 添加路由视图 -->
+    <router-view></router-view>
+    <el-button type="primary" icon="el-icon-back" @click="returnMajor()" size="small">返回</el-button>
+</div>
+
+</body>
+
+
+
+<script>
+
+    const showGamerInfo ={
+        template:'<div><el-card style="width: 100%">' +
+            '<el-descriptions title="玩家信息">' +
+            '<el-descriptions-item label="段位">{{Gamer.dan}}</el-descriptions-item>' +
+            '<el-descriptions-item label="赛季胜率">{{Gamer.seasonWinRate}}</el-descriptions-item>' +
+            '<el-descriptions-item label="赛季场次">{{Gamer.seasonPlayNumber}}</el-descriptions-item>' +
+            '</el-descriptions>' +
+            '</el-card></div>',
+        data(){
+            return{
+            }
+        },
+        inject:["Gamer"]
+    }
+    const showSumInfo={
+        template: '<div><el-card style="width: 100%">' +
+            '<div aria-label="总胜率">{{sumWinRate}}</div>' +
+            '<el-table :data="historicGame">' +
+            '<el-table-column fixed prop="IsWin" label="结果"></el-table-column>' +
+            '<el-table-column prop="startTime" label="游戏开始时间"></el-table-column>' +
+            '<el-table-column prop="endTime" label="游戏结束时间"></el-table-column>' +
+            '<el-table-column fixed="right" label="操作"><el-button @click="checkEndStyle" type="text" size="small">查看结束棋盘</el-button></el-table-column> '+
+            '</el-table>'+
+            '</el-card>',
+        data(){
+            return{
+                historicGame:[],
+                sumWinRate:'',
+                sumPlayNumb:''
+            }
+        },
+        inject:["Gamer"],
+        created(){
+            this.getSumGame();
+        },
+        methods:{
+            getSumGame(){
+                axios.post('http://localhost:8080/MyGobang/Gamer/getSumInfo',
+                    {
+                        headers:{
+                            'Content-Type':'application/json',
+                            'Authorization':'authorization'
+                        }
+                    }).then(response=>{
+                        if(response.data.success){
+                            this.historicGame = response.data.historicGame
+                        }else{
+                            console.log(response.data.message)
+                        }
+                }).catch(err=>{
+                    console.log(err)
+                })
+            },
+            checkEndStyle(gameId){
+                axios.post('http://localhost:8080/MyGobang/chessStyle/checkEndStyle',
+                    {
+
+                    })
+                    .then(response=>{
+                    if(response.data.success){
+                        this.historicGame = response.data.historicGame
+                    }else{
+                        console.log(response.data.message)
+                    }
+                }).catch(err=>{
+                    console.log(err)
+                })
+            }
+        }
+    }
+
+    const showSeasonInfo={
+        template: '<div><el-card style="width: 100%">' +
+            '<div aria-label="赛季胜率">{{seasonWinRate}}</div>' +
+            '<el-table :data="historicGame">' +
+            '<el-table-column fixed prop="IsWin" label="结果"></el-table-column>' +
+            '<el-table-column prop="startTime" label="游戏开始时间"></el-table-column>' +
+            '<el-table-column prop="endTime" label="游戏结束时间"></el-table-column>' +
+            '<el-table-column fixed="right" label="操作"><el-button @click="checkEndStyle" type="text" size="small">查看结束棋盘</el-button></el-table-column> '+
+            '</el-table>'+
+            '</el-card>',
+        data(){
+            return{
+                historicGame:[],
+                seasonWinRate:'',
+                seasonPlayNumb:''
+            }
+        },
+        inject:["Gamer"],
+        created(){
+            this.getSeasonGame();
+        },
+        methods:{
+            getSeasonGame(){
+                axios.post('http://localhost:8080/MyGobang/Gamer/ShowGamerInfo/getSeasonInfo',
+                    {
+                        headers:{
+                            'Content-Type':'application/json',
+                            'Authorization':'authorization'
+                        }
+                    }).then(response=>{
+                    if(response.data.success){
+                        this.historicGame = response.data.historicGame
+                    }else{
+                        console.log(response.data.message)
+                    }
+                }).catch(err=>{
+                    console.log(err)
+                })
+            },
+            checkEndStyle(gameId){
+                axios.post('http://localhost:8080/MyGobang/chessStyle/checkEndStyle')
+                    .then(response=>{
+                        if(response.data.success){
+                            this.historicGame = response.data.historicGame
+                        }else{
+                            console.log(response.data.message)
+                        }
+                    }).catch(err=>{
+                    console.log(err)
+                })
+            }
+        }
+    }
+
+    //设置路由
+    const routes=[
+        {
+            path:'/showGamerInfo',
+            name:'showGamerInfo',
+            component:showGamerInfo
+        },
+        {
+            path:'/showSeasonInfo',
+            name:'showSeasonInfo',
+            component: showSeasonInfo
+        },
+        {
+            path:'/showSumInfo',
+            name:'showSumInfo',
+            component: showSumInfo
+        },
+    ]
+
+    //创建路由实例：
+    const router = new VueRouter({
+        routes
+    })
+
+
+
+
+    new Vue({
+        el:'#ShowGamerInfo',
+        router,
+        data(){
+            return{
+                Gamer:{
+                    dan:'',
+                    winRate:'',
+                    sumPlayNumb: '',
+                    seasonPlayNumb:'',
+                    sumWinRate: '',
+                    seasonWinRate:'',
+                    points:''
+                }
+            }
+        },
+        methods:{
+            handleSelect(Path) {
+                this.$router.push(Path);
+            },
+            returnMajor(){
+                window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Game/Major.html','_self');
+            }
+        },
+        created(){
+          this.Gamer=JSON.parse(localStorage.getItem('Gamer'));
+          localStorage.removeItem('Gamer');
+          alert("进入用户信息界面")
+        },
+        provide(){
+            return{
+                Gamer:this.Gamer
+            }
+        }
+    })
+</script>
+</html>
