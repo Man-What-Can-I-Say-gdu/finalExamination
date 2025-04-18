@@ -13,8 +13,9 @@ public class GamerDaoImp implements GamerMapper {
     public boolean insertGamer(int id) {
         try {
             Connection connection = ConnectionPool.GetConnection();
-            String SQL = "insert into gamer(id) value (?)";
+            String SQL = "insert into gamer (id) values (?)";
             PreparedStatement preparedStatement = connection.prepareStatement(SQL);
+            preparedStatement.setInt(1, id);
             int result = preparedStatement.executeUpdate();
             preparedStatement.close();
             ConnectionPool.RecycleConnection(connection);
@@ -26,7 +27,7 @@ public class GamerDaoImp implements GamerMapper {
 
     @Override
     public Gamer selectAllFromUser(int id) {
-        Gamer gamer = null;
+        Gamer gamer=new Gamer();
         try {
             Connection connection = ConnectionPool.GetConnection();
             String SQL = "select * from gamer where id = ?";
@@ -34,13 +35,14 @@ public class GamerDaoImp implements GamerMapper {
             preparedStatement.setInt(1, id);
             ResultSet resultSet = preparedStatement.executeQuery();
             if(resultSet.next()) {
+                System.out.println(id);
                 gamer.setId(id);
                 gamer.setDan(resultSet.getInt("dan"));
                 gamer.setSeasonPlayNumb(resultSet.getInt("seasonPlayNumb"));
                 gamer.setWinRate(resultSet.getDouble("winRate"));
-                gamer.setSeasonWinNumb(resultSet.getInt("seasonWinNumb"));
                 gamer.setSumPlayNumb(resultSet.getInt("sumPlayNumb"));
-                gamer.setSumWinNumb(resultSet.getInt("sumWinNumb"));
+                gamer.setSumWinNumb(resultSet.getInt("sumWinNumber"));
+                gamer.setSeasonWinNumb(resultSet.getInt("seasonWinNumber"));
                 gamer.setId(resultSet.getInt("id"));
             }
             resultSet.close();

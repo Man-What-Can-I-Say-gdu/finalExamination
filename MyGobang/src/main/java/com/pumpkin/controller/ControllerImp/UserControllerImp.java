@@ -6,7 +6,12 @@ import com.pumpkin.Service.ServiceImp.GamerServiceImp;
 import com.pumpkin.Service.ServiceImp.UserServiceImp;
 import com.pumpkin.controller.UserController;
 import com.pumpkin.entity.User;
+import com.pumpkin.entity.entryData;
+import com.pumpkin.tool.entry.ControllerUtils;
 import com.pumpkin.tool.entry.entry;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -17,6 +22,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.LogManager;
@@ -41,17 +49,139 @@ public class UserControllerImp extends HttpServlet implements UserController {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         setCorHeader(request,response);
         User user = parseToUser(request);
+        System.out.println(request.getPathInfo());
         if("/Login".equals(request.getPathInfo())){
             Login(user, response);
         } else if ("/Register".equals(request.getPathInfo())) {
             Register(user,response);
+        }else if("/ModifyEmail".equals(request.getPathInfo())) {
+            //获取id,需要获取存放在头中的id并进行解码获得原字符串
+            String header = request.getHeader("Authorization").split("\\.")[0];
+            try {
+                //将header解码获取
+                header = Arrays.toString(Hex.decodeHex(header.toCharArray()));
+            } catch (DecoderException e) {
+                throw new RuntimeException(e);
+            }
+            //获取id值
+            int id = Integer.parseInt(header.split("&")[2]);
+            user.setId(id);
+            StringBuffer sb = new StringBuffer();
+            BufferedReader bf = request.getReader();
+            String line = bf.readLine();
+            sb.append(line);
+            //获取user对象
+            User newEmailVector = JSON.parseObject(sb.toString(),User.class);
+            Map<String, Object> returnData = new HashMap<>();
+            if(userServiceImp.ModifyEmail(user,newEmailVector.getEmail())){
+                returnData.put("success",true);
+                response.setStatus(200);
+                response.setContentType("application/json");
+                PrintWriter out = response.getWriter();
+                out.print(JSON.toJSONString(returnData));
+            }else{
+                returnData.put("success",false);
+                returnData.put("message","用户不存在");
+                response.setStatus(200);
+                response.setContentType("application/json");
+                PrintWriter out = response.getWriter();
+                out.print(JSON.toJSONString(returnData));
+            }
+        }else if("/ModifyPhoneNumb".equals(request.getPathInfo())) {
+            //获取id,需要获取存放在头中的id并进行解码获得原字符串
+            String header = request.getHeader("Authorization").split("\\.")[0];
+            try {
+                //将header解码获取
+                header = Arrays.toString(Hex.decodeHex(header.toCharArray()));
+            } catch (DecoderException e) {
+                throw new RuntimeException(e);
+            }
+            //获取id值
+            int id = Integer.parseInt(header.split("&")[2]);
+            user.setId(id);
+            StringBuffer sb = new StringBuffer();
+            BufferedReader bf = request.getReader();
+            String line = bf.readLine();
+            sb.append(line);
+            //获取user对象
+            User newEmailVector = JSON.parseObject(sb.toString(),User.class);
+            Map<String, Object> returnData = new HashMap<>();
+            if(userServiceImp.ModifyPhoneNumber(user,newEmailVector.getEmail())){
+                returnData.put("success",true);
+                response.setStatus(200);
+                response.setContentType("application/json");
+                PrintWriter out = response.getWriter();
+                out.print(JSON.toJSONString(returnData));
+            }else{
+                returnData.put("success",false);
+                returnData.put("message","用户不存在");
+                response.setStatus(200);
+                response.setContentType("application/json");
+                PrintWriter out = response.getWriter();
+                out.print(JSON.toJSONString(returnData));
+            }
+        }else if("/ModifyPassword".equals(request.getPathInfo())) {
+            BufferedReader bf = request.getReader();
+            StringBuilder sb = new StringBuilder();
+            String line = bf.readLine();
+            sb.append(line);
+            //用于存储旧密码的容器
+            User PasswordVector = JSON.parseObject(sb.toString(),User.class);
+            //先验证传入的令牌和原先的是否一致，再验证传入的密码和原先的密码是否相同
+            String Authorization = request.getHeader("Authorization");
+            String[] AuthorizationPart = Authorization.split("&");
+            entryData entryData = new entryData(AuthorizationPart[0],AuthorizationPart[1],AuthorizationPart[2]);
+            //获取注册时生成的盐
+            //获取id,需要获取存放在头中的id并进行解码获得原字符串
+            String header = request.getHeader("Authorization").split("\\.")[0];
+            try {
+                //将header解码获取
+                header = Arrays.toString(Hex.decodeHex(header.toCharArray()));
+            } catch (DecoderException e) {
+                throw new RuntimeException(e);
+            }
+            //获取id值
+            int id = Integer.parseInt(header.split("&")[2]);
+            byte[] salt = userServiceImp.getUserSalt(id);
+            Map<String,Object> returnData = new HashMap<>();
+            try {
+                //获取key
+                byte[] key = entry.deriveKeyFromPassword(PasswordVector.getPassword(),salt);
+                //获取密文并生成签名，对签名进行比对
+                if(AuthorizationPart[2].equals(entry.getSignature(entryData.getPayload(),key,AuthorizationPart[0]))){
+                    //签名相同,说明密码未更改，进一步判断旧密码与新密码是否一致
+                    user=userServiceImp.selectUserById(id);
+                    if(user.getPassword().equals(BCrypt.hashpw(PasswordVector.getPassword(),BCrypt.gensalt(12)))){
+                        //密码相同，进行修改
+                        //获取新密码
+                        line=bf.readLine();
+                        sb.append(line);
+                        PasswordVector = JSON.parseObject(sb.toString(),User.class);
+                        //进行更改
+                        userServiceImp.ModifyPasswordAfterLogin(user,PasswordVector.getPassword());
+                        returnData.put("success",true);
+                    }else{
+                        returnData.put("success",false);
+                    }
+                    //返回处理结果
+                    response.setContentType("application/json");
+                    response.setStatus(200);
+                    //更新令牌
+                    Authorization = buildAuthorization(PasswordVector.getPassword(),entry.deriveKeyFromPassword(user.getPassword(),user.getSalt()), user.getId());
+                    response.setHeader("Authorization",Authorization);
+                    PrintWriter out = response.getWriter();
+                    out.print(JSON.toJSONString(returnData));
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
     }
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        System.out.println("进入options");
         setCorHeader(request,response);
         response.setStatus(200);
-
     }
 
 
@@ -95,6 +225,7 @@ public class UserControllerImp extends HttpServlet implements UserController {
                 //获取Authorization并转化为json字符串
             try {
                 byte[] key = entry.deriveKeyFromPassword(user.getPassword(),user.getSalt());
+                //传入的时Map数组
                 map.put("Authorization",buildAuthorization(user.getPassword(), key,user.getId()));
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -121,6 +252,7 @@ public class UserControllerImp extends HttpServlet implements UserController {
         //map为返回的结果
         Map<String,Object> map = new HashMap<>();
         if(userServiceImp.Register(user)){
+            user.setId(userServiceImp.selectUserByName(user.getName()).getId());
             //生成随机盐值
             userServiceImp.updateUserSalt(user.getId());
             //同步注册gamer账号
@@ -161,18 +293,16 @@ public class UserControllerImp extends HttpServlet implements UserController {
      * 创建Authorization
      * @return Authorization的map集合
      */
-    private static Map<String,String> buildAuthorization(String info,byte[] key,int id) throws Exception {
-        Map<String,String> token = new HashMap<>();
+    private static String buildAuthorization(String info,byte[] key,int id) throws Exception {
+        String token;
         //获取token头
-        Map<String, Object> tokenHeader = entry.getTokenHeader(id);
+        String tokenHeader = new String(entry.getTokenHeader(id));
         //获取payload
-        String Userinfo = entry.encryUserInfo(String.valueOf(info),key,"AES",false);
+        String payload = new String(entry.encryUserInfo(String.valueOf(info),false));
         //获取签名
-        String signature = entry.getSignature(Userinfo,key,tokenHeader.toString());
+        String signature = new String(entry.getSignature(payload,key, tokenHeader));
         //填充token
-        token.put("tokenHeader",tokenHeader.toString());
-        token.put("signature",signature);
-        token.put("Userinfo",Userinfo);
+        token = tokenHeader+"."+payload+"."+signature;
         return token;
     }
 

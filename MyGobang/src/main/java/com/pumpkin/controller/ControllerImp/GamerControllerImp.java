@@ -9,6 +9,8 @@ import com.pumpkin.entity.User;
 import com.pumpkin.entity.entryData;
 import com.pumpkin.tool.entry.ControllerUtils;
 import com.pumpkin.tool.entry.entry;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -20,6 +22,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,26 +46,43 @@ public class GamerControllerImp extends HttpServlet implements GamerController {
         ControllerUtils.setCorHeader(request,response);
         Gamer gamer = new Gamer();
         //对传入的请求进行分拣
-        if("/Major/getGamer".equals(request.getPathInfo())){
-            //通过id获取gamer的所有信息
-            gamer = gamerServiceImp.selectGamerById(Integer.parseInt(request.getHeader("Authorization").split("&")[0].split("\\.")[2]));
-            Map<String,Object> map = new HashMap<>();
-            if(gamer!=null){
-                //如果成功获取到gamer对象，则将gamer对象传递回前端进行数据展示
-                map.put("gamer",gamer);
-                map.put("success",true);
-                String json = JSON.toJSONString(map);
-                response.setContentType("application/json;charset=utf-8");
-                PrintWriter out = response.getWriter();
-                out.write(json);
-            }else{
-                //如果无法获取到gamer对象，则把success设置为true并传递回前端进行控制台输出
-                map.put("success",false);
-                String json = JSON.toJSONString(map);
-                response.setContentType("application/json;charset=utf-8");
-                PrintWriter out = response.getWriter();
-                out.write(json);
-            }
+        System.out.println("Major接收到请求");
+        if("/Major/getGamer".equals(request.getPathInfo())) {
+            //获取gamer对象
+            getGamer(request, response);
+        }
+//        }else if(""){
+//            //个人信息中还有更改信息的功能，接下来进行更改个人信息的模块
+//        }
+    }
+
+    private void getGamer(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        Gamer gamer;
+        //通过id获取gamer的所有信息
+        System.out.println("1------"+request.getHeader("Authorization"));
+        try {
+            int id =Integer.parseInt(new String(Hex.decodeHex(request.getHeader("Authorization").split("\\.")[0].toCharArray())).split("&")[2]);
+            System.out.println(id);
+            gamer = gamerServiceImp.selectGamerById(id);
+        } catch (DecoderException e) {
+            throw new RuntimeException(e);
+        }
+        Map<String,Object> map = new HashMap<>();
+        if(gamer!=null){
+            //如果成功获取到gamer对象，则将gamer对象传递回前端进行数据展示
+            map.put("gamer",gamer);
+            map.put("success",true);
+            String json = JSON.toJSONString(map);
+            response.setContentType("application/json;charset=utf-8");
+            PrintWriter out = response.getWriter();
+            out.write(json);
+        }else{
+            //如果无法获取到gamer对象，则把success设置为true并传递回前端进行控制台输出
+            map.put("success",false);
+            String json = JSON.toJSONString(map);
+            response.setContentType("application/json;charset=utf-8");
+            PrintWriter out = response.getWriter();
+            out.write(json);
         }
     }
 

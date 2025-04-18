@@ -29,6 +29,7 @@ public class GamerServiceImp extends UserServiceImp implements GamerService {
 
     @Override
     public boolean insertGamer(int id) {
+        System.out.println("注册gamer");
         return GamerDaoImp.insertGamer(id);
     }
 

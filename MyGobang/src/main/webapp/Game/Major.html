@@ -36,7 +36,7 @@
                         <el-input v-model="roomInfo.password" placeholder="请输入房间密码" label="房间密码" ></el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-button  type="primary" @click="buildLogin">创建房间</el-button>
+                        <el-button  type="primary" @click="buildRoom">创建房间</el-button>
                     </el-form-item>
                 </el-form>
             </el-dialog>
@@ -56,6 +56,16 @@
         el:"#Major",
         data(){
             return{
+                Gamer:{
+                    id:'',
+                    dan:'',
+                    winRate:'',
+                    sumPlayNumb: '',
+                    seasonPlayNumb:'',
+                    sumWinRate: '',
+                    seasonWinRate:'',
+                    points:''
+                },
                 roomInfo:{
                     roomId:'',
                     IsPublic:false,
@@ -78,20 +88,30 @@
         },
         methods:{
             showGamerInfo(){
-                localStorage.setItem('Gamer',JSON.stringify(this.Gamer));
+                sessionStorage.setItem('Gamer',JSON.stringify(this.Gamer));
+                sessionStorage.setItem('Authorization',JSON.stringify(this.Authorization))
                 window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/GamerInfo/ShowGamerInfo.html','_self')
             }
         },
         created(){
-            this.user.id=localStorage.getItem("gamerId");
+            this.Gamer.id = localStorage.getItem("gamerId");
             this.Authorization = localStorage.getItem("Authorization");
             axios.post("http://localhost:8080/MyGobang/Gamer/Major/getGamer",
+                {},
                 {
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization':'authorization'
+                        'Authorization': this.Authorization
                     },
-                })
+                }).then(response=>{
+                if(response.data.success){
+                    this.gamer = response.data.gamer
+                }else{
+                    alert("获取gamer失败:"+response.data.message)
+                }
+            }).catch(err=>{
+                console.log(err)
+            })
         }
     })
 </script>

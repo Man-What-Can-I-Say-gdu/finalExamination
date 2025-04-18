@@ -68,4 +68,8 @@ public class UserServiceImp implements UserService {
     public boolean updateUserSalt(int id) {
         return userDaoImp.updateUserSalt(id);
     }
+
+    public User selectUserById(int id) {
+        return userDaoImp.selectUserById(id);
+    }
 }

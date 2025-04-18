@@ -18,7 +18,7 @@ public class ControllerUtils {
         response.addHeader("Access-Control-Allow-Credentials", "true");
         response.addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE");
         response.addHeader("Access-Control-Max-Age", "3600");
-        response.addHeader("Access-Control-Allow-Headers", "content-type");
+        response.addHeader("Access-Control-Allow-Headers", "content-type,Authorization");
         response.addHeader("Access-Control-Allow-Credentials", "true");
     }
 }

@@ -10,6 +10,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class UserDaoImp implements UserMapper {
     User user;
@@ -96,6 +97,7 @@ public class UserDaoImp implements UserMapper {
                     user.setId(resultSet.getInt("id"));
                     user.setEmail(resultSet.getString("email"));
                     user.setPhoneNumber(resultSet.getString("phonenumber"));
+                    user.setSalt(resultSet.getString("salt").getBytes());
                 }
             }
             preparedStatement.close();
@@ -201,6 +203,7 @@ public class UserDaoImp implements UserMapper {
             Connection connection = ConnectionPool.GetConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(SQL);
             byte[] salt = entry.getRandomSalt(entry.BS);
+            System.out.println(Arrays.toString(salt));
             preparedStatement.setBytes(1,salt);
             preparedStatement.setInt(2,id);
             int result = preparedStatement.executeUpdate();
@@ -223,6 +226,29 @@ public class UserDaoImp implements UserMapper {
             ConnectionPool.RecycleConnection(connection);
             if(resultSet.next()) {
                 return resultSet.getBytes(1);
+            }
+            return null;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public User selectUserById(int id){
+        User user = new User();
+        String SQL = "select * from user where id=?";
+        try {
+            Connection connection = ConnectionPool.GetConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(SQL);
+            preparedStatement.setInt(1,id);
+            ResultSet resultSet = preparedStatement.executeQuery();
+            preparedStatement.close();
+            ConnectionPool.RecycleConnection(connection);
+            if(resultSet.next()) {
+                user.setId(resultSet.getInt("id"));
+                user.setEmail(resultSet.getString("email"));
+                user.setPhoneNumber(resultSet.getString("phonenumber"));
+                user.setName(resultSet.getString("name"));
+                user.setPassword(resultSet.getString("password"));
+                return user;
             }
             return null;
         } catch (Exception e) {

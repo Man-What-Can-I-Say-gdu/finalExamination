@@ -1,5 +1,6 @@
 package com.pumpkin.tool.entry;
 
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.xerces.impl.dv.util.Base64;
 
@@ -39,35 +40,30 @@ public class entry {
 
 
     /**
-     * 对传入的数据进行加密，此处只对用户的id进行加密，不设置保存时间
-     * @param info 用户id
-     * @param key 密钥
+     * 对传入的数据进行加密，此处只对用户的password进行加密，不设置保存时间
+     * @param info 用户密码
      * @return 加密后的字符串
      */
-    public static String encryUserInfo(String info,byte[] key,String algorithm,boolean cbc) throws Exception {
-        // 根据加密类型判断key字节数
-        String UserInfo = gerInfoString(info,key);
-        //CBC模式
-        String transformation = cbc? algorithm+ "CBC" : algorithm;
-        //获取加密对象
-        Cipher cipher = Cipher.getInstance(transformation);
-        //创建加密规则
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key,algorithm);
-        //初始化加密模式和算法
-        if(cbc){
-            //使用cbc模式
-            cipher.init(Cipher.ENCRYPT_MODE,secretKeySpec,new IvParameterSpec(key));
-        }else{
-            cipher.init(Cipher.ENCRYPT_MODE,secretKeySpec);
-        }
-        //加密并返回
-        return Base64.encode(cipher.doFinal(UserInfo.getBytes()));
-    }
-    public static String gerInfoString(String info,byte[] key){
-        //获取InfoString
-        return "key="+ Arrays.toString(key) +"&info="+info+"&starttime="+System.currentTimeMillis();
-    }
+    public static char[] encryUserInfo(String info,boolean cbc) throws Exception {
+//        // 根据加密类型判断key字节数
+//        String UserInfo = gerInfoString(info,key);
+//        //CBC模式
+//        String transformation = cbc? algorithm+ "CBC" : algorithm;
+//        //获取加密对象
+//        Cipher cipher = Cipher.getInstance(transformation);
+//        //创建加密规则
+//        SecretKeySpec secretKeySpec = new SecretKeySpec(key,algorithm);
+//        //初始化加密模式和算法
+//        if(cbc){
+//            //使用cbc模式
+//            cipher.init(Cipher.ENCRYPT_MODE,secretKeySpec,new IvParameterSpec(key));
+//        }else{
+//            cipher.init(Cipher.ENCRYPT_MODE,secretKeySpec);
+//        }
 
+        //加密并返回
+        return Hex.encodeHex(info.getBytes());
+    }
     /**
      * 对密文进行解密
      * @param entryInfo 传入的密文
@@ -77,19 +73,19 @@ public class entry {
      * @return
      */
     public static String decryInfoString(String entryInfo,byte[] key,String algorithm,boolean cbc) throws Exception {
-        // 根据加密类型判断key字节数
-        String transformation = cbc? algorithm+ "CBC" : algorithm;
-        //获取Cipher对象
-        Cipher cipher = Cipher.getInstance(transformation);
-        //指定密钥规则
-        SecretKeySpec secretKeySpec = new SecretKeySpec(key,algorithm);
-        if(cbc){
-            cipher.init(Cipher.DECRYPT_MODE,secretKeySpec,new IvParameterSpec(key));
-        }else{
-            cipher.init(Cipher.DECRYPT_MODE,secretKeySpec);
-        }
+//        // 根据加密类型判断key字节数
+//        String transformation = cbc? algorithm+ "CBC" : algorithm;
+//        //获取Cipher对象
+//        Cipher cipher = Cipher.getInstance(transformation);
+//        //指定密钥规则
+//        SecretKeySpec secretKeySpec = new SecretKeySpec(key,algorithm);
+//        if(cbc){
+//            cipher.init(Cipher.DECRYPT_MODE,secretKeySpec,new IvParameterSpec(key));
+//        }else{
+//            cipher.init(Cipher.DECRYPT_MODE,secretKeySpec);
+//        }
         //解密
-        return new String(cipher.doFinal(Base64.decode(entryInfo)));
+        return new String(Hex.decodeHex(entryInfo.toCharArray()));
     }
 
 
@@ -113,17 +109,7 @@ public class entry {
         //计算hmac签名
         byte[] digest = mac.doFinal((header+"."+plainStr).getBytes(StandardCharsets.UTF_8));
         //转化为16进制字符串
-        return byte2HexStr(digest);
-    }
-
-
-    /**
-     *  将传入的digest转化为16进制字符串
-     * @param digest
-     * @return
-     */
-    public static String byte2HexStr(byte[] digest) {
-        return digest != null? new String(Hex.encodeHex(digest)) : null;
+        return Hex.encodeHexString(digest);
     }
 
 
@@ -153,12 +139,9 @@ public class entry {
     /**
      * 设置token头
      */
-    public static Map<String,Object> getTokenHeader(int id){
-        Map<String,Object> map = new HashMap<>();
-        map.put("algorithm","HmacSHA256");
-        map.put("typ","jwt");
-        map.put("id",id);
-        return map;
+    public static char[] getTokenHeader(int id){
+        String header = "HmacSHA256&jwt&"+id;
+        return Hex.encodeHex(header.getBytes());
     }
 
 

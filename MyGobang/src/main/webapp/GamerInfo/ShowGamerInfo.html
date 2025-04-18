@@ -21,15 +21,14 @@
              class="GamerInfoPresent"
              mode="horizontal"
              router
-             @select="handleSelect"
-    >
+             @select="handleSelect">
         <el-menu-item index="/showGamerInfo">玩家信息</el-menu-item>
         <el-menu-item index="/showSeasonInfo">赛季战绩</el-menu-item>
         <el-menu-item index="/showSumInfo">全部战绩</el-menu-item>
     </el-menu>
     <!-- 添加路由视图 -->
     <router-view></router-view>
-    <el-button type="primary" icon="el-icon-back" @click="returnMajor()" size="small">返回</el-button>
+    <el-button type="primary" icon="el-icon-back" @click="returnMajor()" size="small">返回主界面</el-button>
 </div>
 
 </body>
@@ -39,18 +38,140 @@
 <script>
 
     const showGamerInfo ={
-        template:'<div><el-card style="width: 100%">' +
+        template: '<div><el-card style="width: 100%">' +
             '<el-descriptions title="玩家信息">' +
             '<el-descriptions-item label="段位">{{Gamer.dan}}</el-descriptions-item>' +
             '<el-descriptions-item label="赛季胜率">{{Gamer.seasonWinRate}}</el-descriptions-item>' +
             '<el-descriptions-item label="赛季场次">{{Gamer.seasonPlayNumber}}</el-descriptions-item>' +
+            '<template slot="extra">'+
+            //弹出表单使填写表单内容，需要输入原先的字段进行验证
+            '<el-button type="primary" icon="el-icon-setting" @click="phoneNumberFormVisible=true" size="small">修改手机号</el-button>' +
+            '<el-button type="primary" icon="el-icon-setting"  @click="emailFormVisible=true" size="small" >修改邮箱</el-button>' +
+            '<el-button type="primary" icon="el-icon-setting"  @click="passwordFormVisible=true" size="small">修改密码</el-button>'+
+            '</el-popover>' +
+            '</template>'+
             '</el-descriptions>' +
-            '</el-card></div>',
+            '</el-card>' +
+            '<el-dialog :visible.sync="emailFormVisible" title="修改邮箱">' +
+            '<el-form :model="email"  :visible.sync="emailFormVisible" width="150px" :rules="emailRules">' +
+            '<el-form-item label="新邮箱" label-width="120px" prop="email"><el-input v-model="email"></el-input></el-form-item>  ' +
+            '<el-form-item><el-button type="primary" @click="submitEmail(\'email\')">提交</el-button> </el-form-item></el-form> </el-dialog>' +
+            '<el-dialog :visible.sync="phoneNumberFormVisible" title="修改手机号">' +
+            '<el-form :model="PhoneNumb"  :visible.sync="phoneNumberFormVisible" width="150px" :rules="phoneNumberRules">' +
+            '<el-form-item label="新手机号码" label-width="120px" prop="PhoneNumb"><el-input v-model="PhoneNumb"></el-input></el-form-item>  ' +
+            '<el-form-item><el-button type="primary" @click=submitPhoneNumb()>提交</el-button> </el-form-item></el-form> </el-dialog>' +
+            '<el-dialog :visible.sync="passwordFormVisible" title="修改密码">' +
+            '<el-form :model="password"  :visible.sync="passwordFormVisible" width="150px" :rules="passwordRules">' +
+            '<el-form-item label="旧密码" label-width="120px" prop="password.primaryPassword"><el-input v-model="password.primaryPassword"></el-input> </el-form-item>' +
+            '<el-form-item label="新密码" label-width="120px" prop="password.Password"><el-input v-model="password.Password"></el-input></el-form-item>  ' +
+            '<el-form-item><el-button type="primary" @click="submitPassword(\'password\')">提交</el-button> </el-form-item></el-form> </el-dialog></div>',
+
         data(){
             return{
+                email:'',
+                PhoneNumb:'',
+                password:{
+                    primaryPassword:'',
+                    Password:'',
+                },
+                emailFormVisible:false,
+                phoneNumberFormVisible:false,
+                passwordFormVisible:false,
+
+                    passwordRules:{
+                        primaryPassword: [
+                            { required:true, message:'请输入密码',trigger:'blur'},
+                            { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
+                        ],
+                        password:[
+                            { required:true, message:'请输入密码',trigger:'blur'},
+                            { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
+                        ]
+                    },
+                    emailRules:{
+                        email: [ {required:true, message:'请输入邮箱号',trigger:'blur'},
+                            {
+                                pattern: /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+                                message: '请输入正确的邮箱号',
+                                trigger: 'blur'
+                            }]
+                    },
+                    phoneNumberRules:{
+                        phoneNumb:[
+                            { required:true , message:"请输入手机号码",trigger:'blur'},
+                            { pattern:/^\d{11}$/ , message: '请输入正确的手机号',trigger: 'blur'}
+                        ],
+                    }
             }
         },
-        inject:["Gamer"]
+        inject:["Gamer"],
+        methods:{
+            submitEmail(email){
+                axios.post("http://localhost:8080/MyGobang/User/ModifyEmail",{
+                        email:this.email.email
+                    },
+                    {
+                        headers:{
+                            'Content-Type':'application/json',
+                            'Authorization':this.Authorization
+                        }
+                    }).then(response=>{
+                    if(response.data.success){
+                        alert("修改成功")
+                    }else{
+                        alert("修改失败：" +response.data.message)
+                    }
+                }).catch(err=>{
+                    console.log(err)
+                })
+            },
+            submitPhoneNumb(){
+                alert(this.Authorization);
+                alert(this.Gamer.id)
+                axios.post("http://localhost:8080/MyGobang/User/ModifyPhoneNumb",{
+                        phoneNumber:this.PhoneNumb,
+                    },
+                    {
+                        headers:{
+                            'Content-Type':'application/json',
+                            'Authorization':this.Authorization
+                        }
+                    }).then(response=>{
+                    if(response.data.success){
+                        alert("修改成功")
+                    }else{
+                        alert("修改失败：" +response.data.message)
+                    }
+                }).catch(err=>{
+                    console.log(err)
+                })
+            },
+            submitPassword(){
+                axios.post("http://localhost:8080/MyGobang/User/ModifyPassword",{
+                        primaryPassword:this.password.primaryPassword,
+                        password:this.password.password
+                    },
+                    {
+                        headers:{
+                            'Content-Type':'application/json',
+                            'Authorization':this.Authorization
+                        }
+                    }).then(response=>{
+                    if(response.data.success){
+                        alert("修改成功")
+                    }else{
+                        alert("修改失败：" +response.data.message)
+                    }
+                }).catch(err=>{
+                    console.log(err)
+                })
+            },
+        },
+
+        created(){
+            alert(this.Gamer.id);
+            alert(this.Authorization)
+        }
     }
     const showSumInfo={
         template: '<div><el-card style="width: 100%">' +
@@ -69,17 +190,17 @@
                 sumPlayNumb:''
             }
         },
-        inject:["Gamer"],
+        inject:['Gamer','Authorization'],
         created(){
             this.getSumGame();
         },
         methods:{
             getSumGame(){
-                axios.post('http://localhost:8080/MyGobang/Gamer/getSumInfo',
+                axios.post('http://localhost:8080/MyGobang/Gamer/ShowGamerInfo/getSumInfo',
                     {
                         headers:{
                             'Content-Type':'application/json',
-                            'Authorization':'authorization'
+                            'Authorization':this.Authorization
                         }
                     }).then(response=>{
                         if(response.data.success){
@@ -187,15 +308,18 @@
         routes
     })
 
-
+Vue.component('showGamerInfo',showGamerInfo)
 
 
     new Vue({
         el:'#ShowGamerInfo',
         router,
+        //将gamer数据传递给子组件
+
         data(){
             return{
                 Gamer:{
+                    id:'',
                     dan:'',
                     winRate:'',
                     sumPlayNumb: '',
@@ -203,7 +327,8 @@
                     sumWinRate: '',
                     seasonWinRate:'',
                     points:''
-                }
+                },
+                Authorization:''
             }
         },
         methods:{
@@ -211,17 +336,23 @@
                 this.$router.push(Path);
             },
             returnMajor(){
+                //跳转回到Major界面
                 window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Game/Major.html','_self');
-            }
+            },
         },
         created(){
-          this.Gamer=JSON.parse(localStorage.getItem('Gamer'));
+            //从Major界面获取gamer对象
+            //gamer对象为undefined
+          this.Gamer=JSON.parse(sessionStorage.getItem('Gamer'));
+          this.Authorization=JSON.parse(sessionStorage.getItem('Authorization'));
+          alert(this.Gamer);
+          alert(this.Authorization)
           localStorage.removeItem('Gamer');
-          alert("进入用户信息界面")
         },
         provide(){
             return{
-                Gamer:this.Gamer
+                Gamer: this.Gamer,
+                Authorization: this.Authorization
             }
         }
     })

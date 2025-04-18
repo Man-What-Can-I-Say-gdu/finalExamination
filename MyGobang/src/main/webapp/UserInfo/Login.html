@@ -85,7 +85,6 @@
                             }).then(response=>{
                                 if(response.data.success){
                                     this.loginUser.id = response.data.gamerId;
-                                    alert("登录成功");
                                     localStorage.setItem("Authorization",response.data.Authorization);
                                     localStorage.setItem("gamerId",this.loginUser.id)
                                     window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Game/Major.html','_self');
