@@ -117,14 +117,14 @@ public class UserControllerImp extends HttpServlet implements UserController {
                 out.print(JSON.toJSONString(returnData));
             }
         }else if("/ModifyPassword".equals(request.getPathInfo())) {
-            //因为传入两个password数据，因此需要分开读取request的数据
+            //将传入的password解析并分布额读取
             BufferedReader bf = request.getReader();
             StringBuilder sb = new StringBuilder();
-            String line = bf.readLine();
-            sb.append(line);
-            //用于存储旧密码的容器
-            User PasswordVector = JSON.parseObject(sb.toString(),User.class);
-            System.out.println(PasswordVector);
+            String line;
+            while((line = bf.readLine())!=null){
+                sb.append(line);
+            }
+            Password passwordVector = JSON.parseObject(sb.toString(), Password.class);
             //先验证传入的令牌和原先的是否一致，再验证传入的密码和原先的密码是否相同
             String Authorization = request.getHeader("Authorization");
             String[] AuthorizationPart = Authorization.split("\\.");
@@ -140,36 +140,29 @@ public class UserControllerImp extends HttpServlet implements UserController {
             //获取id值
             int id = Integer.parseInt(entrydata.getHeader().split("&")[2]);
             byte[] salt = userServiceImp.getUserSalt(id);
-            //准备好返回数据的集合
+            //准备好返回数据的集合和充当容器的user
             Map<String,Object> returnData = new HashMap<>();
             try {
-                //获取key
-                byte[] key = entry.deriveKeyFromPassword(PasswordVector.getPassword(),salt);
-                //获取密文并生成签名，对签名进行比对
-                if(AuthorizationPart[2].equals(entry.getSignature(entrydata.getPayload(),key,AuthorizationPart[0]))){
-                    //签名相同,说明密码未更改，进一步判断旧密码与新密码是否一致
-                    User user=userServiceImp.selectUserById(id);
-                    if(user.getPassword().equals(BCrypt.hashpw(PasswordVector.getPassword(),BCrypt.gensalt(12)))){
+                User user;
+                user=userServiceImp.selectUserById(id);
+                user.setSalt(userServiceImp.getUserSalt(user.getId()));
+                    if(BCrypt.checkpw(passwordVector.getPrimaryPassword(),user.getPassword())){
                         //密码相同，进行修改
-                        //获取新密码
-                        line=bf.readLine();
-                        sb.append(line);
-                        PasswordVector = JSON.parseObject(sb.toString(),User.class);
-                        //进行更改
-                        userServiceImp.ModifyPasswordAfterLogin(user,PasswordVector.getPassword());
+                        userServiceImp.ModifyPasswordAfterLogin(user,passwordVector.getPassword());
                         returnData.put("success",true);
+                        //更新令牌
+                        Authorization = buildAuthorization(passwordVector.getPassword(),entry.deriveKeyFromPassword(user.getPassword(),user.getSalt()), user.getId());
+                        response.setHeader("Authorization",Authorization);
                     }else{
                         returnData.put("success",false);
+                        returnData.put("message","原密码错误");
                     }
-                    //返回处理结果
-                    response.setContentType("application/json");
-                    response.setStatus(200);
-                    //更新令牌
-                    Authorization = buildAuthorization(PasswordVector.getPassword(),entry.deriveKeyFromPassword(user.getPassword(),user.getSalt()), user.getId());
-                    response.setHeader("Authorization",Authorization);
-                    PrintWriter out = response.getWriter();
-                    out.print(JSON.toJSONString(returnData));
-                }
+                //返回处理结果
+                response.setContentType("application/json");
+                response.setStatus(200);
+
+                PrintWriter out = response.getWriter();
+                out.print(JSON.toJSONString(returnData));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -177,7 +170,6 @@ public class UserControllerImp extends HttpServlet implements UserController {
     }
     @Override
     protected void doOptions(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        System.out.println("进入options");
         setCorHeader(request,response);
         response.setStatus(200);
     }
@@ -302,6 +294,46 @@ public class UserControllerImp extends HttpServlet implements UserController {
         //填充token
         token = tokenHeader+"."+payload+"."+signature;
         return token;
+    }
+
+    /**
+     * 创建密码容器的内部类，用于存放密码
+     */
+    private class Password{
+        private String password;
+        private String primaryPassword;
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public String getPrimaryPassword() {
+            return primaryPassword;
+        }
+
+        public void setPrimaryPassword(String primaryPassword) {
+            this.primaryPassword = primaryPassword;
+        }
+
+        public Password() {
+        }
+
+        public Password(String password, String primaryPassword) {
+            this.password = password;
+            this.primaryPassword = primaryPassword;
+        }
+
+        @Override
+        public String toString() {
+            return "Password{" +
+                    "password='" + password + '\'' +
+                    ", primaryPassword='" + primaryPassword + '\'' +
+                    '}';
+        }
     }
 
 }

@@ -48,7 +48,6 @@
             '<el-button type="primary" icon="el-icon-setting" @click="phoneNumberFormVisible=true" size="small">修改手机号</el-button>' +
             '<el-button type="primary" icon="el-icon-setting"  @click="emailFormVisible=true" size="small" >修改邮箱</el-button>' +
             '<el-button type="primary" icon="el-icon-setting"  @click="passwordFormVisible=true" size="small">修改密码</el-button>'+
-            '</el-popover>' +
             '</template>'+
             '</el-descriptions>' +
             '</el-card>' +
@@ -83,7 +82,7 @@
                         { required:true, message:'请输入密码',trigger:'blur'},
                         { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
                     ],
-                    password:[
+                    Password:[
                         { required:true, message:'请输入密码',trigger:'blur'},
                         { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
                     ]
@@ -97,7 +96,7 @@
                         }]
                 },
                 phoneNumberRules:{
-                    phoneNumb:[
+                    PhoneNumb:[
                         { required:true , message:"请输入手机号码",trigger:'blur'},
                         { pattern:/^\d{11}$/ , message: '请输入正确的手机号',trigger: 'blur'}
                     ],
@@ -105,12 +104,8 @@
             }
         },
         inject:["Authorization","Gamer"],
-        mounted(){
-          alert(this.Gamer.id)
-        },
-
         methods:{
-            submitEmail(email){
+            submitEmail(){
                 axios.post("http://localhost:8080/MyGobang/User/ModifyEmail",{
                         email:this.email
                     },
@@ -152,8 +147,8 @@
             },
             submitPassword(){
                 axios.post("http://localhost:8080/MyGobang/User/ModifyPassword",{
-                        password:this.password.primaryPassword,
-                        password:this.password.password
+                        primaryPassword:this.password.primaryPassword,
+                        password:this.password.Password
                     },
                     {
                         headers:{
@@ -344,8 +339,6 @@ Vue.component('showGamerInfo',showGamerInfo)
             //gamer对象为undefined
           this.Gamer=JSON.parse(sessionStorage.getItem('Gamer'));
           this.Authorization=JSON.parse(sessionStorage.getItem('Authorization'));
-          alert(this.Gamer);
-          alert(this.Authorization)
           localStorage.removeItem('Gamer');
         },
         provide(){

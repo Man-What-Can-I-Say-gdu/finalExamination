@@ -222,8 +222,6 @@ public class UserDaoImp implements UserMapper {
             PreparedStatement preparedStatement = connection.prepareStatement(SQL);
             preparedStatement.setInt(1,id);
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-            ConnectionPool.RecycleConnection(connection);
             if(resultSet.next()) {
                 return resultSet.getBytes(1);
             }
@@ -240,17 +238,17 @@ public class UserDaoImp implements UserMapper {
             PreparedStatement preparedStatement = connection.prepareStatement(SQL);
             preparedStatement.setInt(1,id);
             ResultSet resultSet = preparedStatement.executeQuery();
-            preparedStatement.close();
-            ConnectionPool.RecycleConnection(connection);
+
             if(resultSet.next()) {
                 user.setId(resultSet.getInt("id"));
                 user.setEmail(resultSet.getString("email"));
                 user.setPhoneNumber(resultSet.getString("phonenumber"));
                 user.setName(resultSet.getString("name"));
                 user.setPassword(resultSet.getString("password"));
-                return user;
             }
-            return null;
+            preparedStatement.close();
+            ConnectionPool.RecycleConnection(connection);
+            return user;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
