@@ -48,32 +48,31 @@ public class UserControllerImp extends HttpServlet implements UserController {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         setCorHeader(request,response);
-        User user = parseToUser(request);
-        System.out.println(request.getPathInfo());
         if("/Login".equals(request.getPathInfo())){
+            //获取user对象
+            User user = parseToUser(request);
             Login(user, response);
         } else if ("/Register".equals(request.getPathInfo())) {
+            //过去user对象
+            User user = parseToUser(request);
             Register(user,response);
-        }else if("/ModifyEmail".equals(request.getPathInfo())) {
+        }else if("/ModifyEmail".equals(request.getPathInfo())){
+            //获取传入的user对象，user对象中包含传入的新email
+            User user = parseToUser(request);
             //获取id,需要获取存放在头中的id并进行解码获得原字符串
             String header = request.getHeader("Authorization").split("\\.")[0];
             try {
                 //将header解码获取
-                header = Arrays.toString(Hex.decodeHex(header.toCharArray()));
+                header = new String(Hex.decodeHex(header.toCharArray()));
             } catch (DecoderException e) {
                 throw new RuntimeException(e);
             }
             //获取id值
             int id = Integer.parseInt(header.split("&")[2]);
             user.setId(id);
-            StringBuffer sb = new StringBuffer();
-            BufferedReader bf = request.getReader();
-            String line = bf.readLine();
-            sb.append(line);
-            //获取user对象
-            User newEmailVector = JSON.parseObject(sb.toString(),User.class);
+
             Map<String, Object> returnData = new HashMap<>();
-            if(userServiceImp.ModifyEmail(user,newEmailVector.getEmail())){
+            if(userServiceImp.ModifyEmail(user,user.getEmail())){
                 returnData.put("success",true);
                 response.setStatus(200);
                 response.setContentType("application/json");
@@ -88,25 +87,22 @@ public class UserControllerImp extends HttpServlet implements UserController {
                 out.print(JSON.toJSONString(returnData));
             }
         }else if("/ModifyPhoneNumb".equals(request.getPathInfo())) {
+            //获取传入的user对象，此时user中包含新的phoneNumber数据
+            User user = parseToUser(request);
             //获取id,需要获取存放在头中的id并进行解码获得原字符串
             String header = request.getHeader("Authorization").split("\\.")[0];
             try {
                 //将header解码获取
-                header = Arrays.toString(Hex.decodeHex(header.toCharArray()));
+                header = new String(Hex.decodeHex(header.toCharArray()));
             } catch (DecoderException e) {
                 throw new RuntimeException(e);
             }
             //获取id值
+
             int id = Integer.parseInt(header.split("&")[2]);
             user.setId(id);
-            StringBuffer sb = new StringBuffer();
-            BufferedReader bf = request.getReader();
-            String line = bf.readLine();
-            sb.append(line);
-            //获取user对象
-            User newEmailVector = JSON.parseObject(sb.toString(),User.class);
             Map<String, Object> returnData = new HashMap<>();
-            if(userServiceImp.ModifyPhoneNumber(user,newEmailVector.getEmail())){
+            if(userServiceImp.ModifyPhoneNumber(user,user.getPhoneNumber())){
                 returnData.put("success",true);
                 response.setStatus(200);
                 response.setContentType("application/json");
@@ -121,36 +117,38 @@ public class UserControllerImp extends HttpServlet implements UserController {
                 out.print(JSON.toJSONString(returnData));
             }
         }else if("/ModifyPassword".equals(request.getPathInfo())) {
+            //因为传入两个password数据，因此需要分开读取request的数据
             BufferedReader bf = request.getReader();
             StringBuilder sb = new StringBuilder();
             String line = bf.readLine();
             sb.append(line);
             //用于存储旧密码的容器
             User PasswordVector = JSON.parseObject(sb.toString(),User.class);
+            System.out.println(PasswordVector);
             //先验证传入的令牌和原先的是否一致，再验证传入的密码和原先的密码是否相同
             String Authorization = request.getHeader("Authorization");
-            String[] AuthorizationPart = Authorization.split("&");
-            entryData entryData = new entryData(AuthorizationPart[0],AuthorizationPart[1],AuthorizationPart[2]);
+            String[] AuthorizationPart = Authorization.split("\\.");
+            entryData entrydata = new entryData(AuthorizationPart[0],AuthorizationPart[1],AuthorizationPart[2]);
             //获取注册时生成的盐
             //获取id,需要获取存放在头中的id并进行解码获得原字符串
-            String header = request.getHeader("Authorization").split("\\.")[0];
             try {
                 //将header解码获取
-                header = Arrays.toString(Hex.decodeHex(header.toCharArray()));
+                entrydata.setHeader(new String(Hex.decodeHex(entrydata.getHeader().toCharArray())));
             } catch (DecoderException e) {
                 throw new RuntimeException(e);
             }
             //获取id值
-            int id = Integer.parseInt(header.split("&")[2]);
+            int id = Integer.parseInt(entrydata.getHeader().split("&")[2]);
             byte[] salt = userServiceImp.getUserSalt(id);
+            //准备好返回数据的集合
             Map<String,Object> returnData = new HashMap<>();
             try {
                 //获取key
                 byte[] key = entry.deriveKeyFromPassword(PasswordVector.getPassword(),salt);
                 //获取密文并生成签名，对签名进行比对
-                if(AuthorizationPart[2].equals(entry.getSignature(entryData.getPayload(),key,AuthorizationPart[0]))){
+                if(AuthorizationPart[2].equals(entry.getSignature(entrydata.getPayload(),key,AuthorizationPart[0]))){
                     //签名相同,说明密码未更改，进一步判断旧密码与新密码是否一致
-                    user=userServiceImp.selectUserById(id);
+                    User user=userServiceImp.selectUserById(id);
                     if(user.getPassword().equals(BCrypt.hashpw(PasswordVector.getPassword(),BCrypt.gensalt(12)))){
                         //密码相同，进行修改
                         //获取新密码

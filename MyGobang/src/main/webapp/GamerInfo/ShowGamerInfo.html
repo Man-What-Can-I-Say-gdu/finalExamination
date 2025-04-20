@@ -5,7 +5,7 @@
     <title>ShowGamerInfo</title>
 </head>
 <body>
-<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <!-- 引入样式 -->
 <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
@@ -55,7 +55,7 @@
             '<el-dialog :visible.sync="emailFormVisible" title="修改邮箱">' +
             '<el-form :model="email"  :visible.sync="emailFormVisible" width="150px" :rules="emailRules">' +
             '<el-form-item label="新邮箱" label-width="120px" prop="email"><el-input v-model="email"></el-input></el-form-item>  ' +
-            '<el-form-item><el-button type="primary" @click="submitEmail(\'email\')">提交</el-button> </el-form-item></el-form> </el-dialog>' +
+            '<el-form-item><el-button type="primary" @click="submitEmail()">提交</el-button> </el-form-item></el-form> </el-dialog>' +
             '<el-dialog :visible.sync="phoneNumberFormVisible" title="修改手机号">' +
             '<el-form :model="PhoneNumb"  :visible.sync="phoneNumberFormVisible" width="150px" :rules="phoneNumberRules">' +
             '<el-form-item label="新手机号码" label-width="120px" prop="PhoneNumb"><el-input v-model="PhoneNumb"></el-input></el-form-item>  ' +
@@ -64,7 +64,7 @@
             '<el-form :model="password"  :visible.sync="passwordFormVisible" width="150px" :rules="passwordRules">' +
             '<el-form-item label="旧密码" label-width="120px" prop="password.primaryPassword"><el-input v-model="password.primaryPassword"></el-input> </el-form-item>' +
             '<el-form-item label="新密码" label-width="120px" prop="password.Password"><el-input v-model="password.Password"></el-input></el-form-item>  ' +
-            '<el-form-item><el-button type="primary" @click="submitPassword(\'password\')">提交</el-button> </el-form-item></el-form> </el-dialog></div>',
+            '<el-form-item><el-button type="primary" @click="submitPassword()">提交</el-button> </el-form-item></el-form> </el-dialog></div>',
 
         data(){
             return{
@@ -78,37 +78,41 @@
                 phoneNumberFormVisible:false,
                 passwordFormVisible:false,
 
-                    passwordRules:{
-                        primaryPassword: [
-                            { required:true, message:'请输入密码',trigger:'blur'},
-                            { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
-                        ],
-                        password:[
-                            { required:true, message:'请输入密码',trigger:'blur'},
-                            { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
-                        ]
-                    },
-                    emailRules:{
-                        email: [ {required:true, message:'请输入邮箱号',trigger:'blur'},
-                            {
-                                pattern: /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-                                message: '请输入正确的邮箱号',
-                                trigger: 'blur'
-                            }]
-                    },
-                    phoneNumberRules:{
-                        phoneNumb:[
-                            { required:true , message:"请输入手机号码",trigger:'blur'},
-                            { pattern:/^\d{11}$/ , message: '请输入正确的手机号',trigger: 'blur'}
-                        ],
-                    }
+                passwordRules:{
+                    primaryPassword: [
+                        { required:true, message:'请输入密码',trigger:'blur'},
+                        { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
+                    ],
+                    password:[
+                        { required:true, message:'请输入密码',trigger:'blur'},
+                        { min:10 , max: 20 ,message: '密码长度应在10到20之间', trigger:'blur'}
+                    ]
+                },
+                emailRules:{
+                    email: [ {required:true, message:'请输入邮箱号',trigger:'blur'},
+                        {
+                            pattern: /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+                            message: '请输入正确的邮箱号',
+                            trigger: 'blur'
+                        }]
+                },
+                phoneNumberRules:{
+                    phoneNumb:[
+                        { required:true , message:"请输入手机号码",trigger:'blur'},
+                        { pattern:/^\d{11}$/ , message: '请输入正确的手机号',trigger: 'blur'}
+                    ],
+                }
             }
         },
-        inject:["Gamer"],
+        inject:["Authorization","Gamer"],
+        mounted(){
+          alert(this.Gamer.id)
+        },
+
         methods:{
             submitEmail(email){
                 axios.post("http://localhost:8080/MyGobang/User/ModifyEmail",{
-                        email:this.email.email
+                        email:this.email
                     },
                     {
                         headers:{
@@ -148,7 +152,7 @@
             },
             submitPassword(){
                 axios.post("http://localhost:8080/MyGobang/User/ModifyPassword",{
-                        primaryPassword:this.password.primaryPassword,
+                        password:this.password.primaryPassword,
                         password:this.password.password
                     },
                     {
@@ -167,11 +171,6 @@
                 })
             },
         },
-
-        created(){
-            alert(this.Gamer.id);
-            alert(this.Authorization)
-        }
     }
     const showSumInfo={
         template: '<div><el-card style="width: 100%">' +
@@ -351,8 +350,8 @@ Vue.component('showGamerInfo',showGamerInfo)
         },
         provide(){
             return{
-                Gamer: this.Gamer,
-                Authorization: this.Authorization
+                Gamer: Vue.computed(()=>this.Gamer),
+                Authorization:  Vue.computed(()=>this.Authorization)
             }
         }
     })

@@ -26,4 +26,7 @@ public interface GamerController {
      * 清空赛季段位数据
      */
     public void clearSeasonData(HttpServletRequest request, HttpServletResponse response);
+
+    interface RoomMapper {
+    }
 }
