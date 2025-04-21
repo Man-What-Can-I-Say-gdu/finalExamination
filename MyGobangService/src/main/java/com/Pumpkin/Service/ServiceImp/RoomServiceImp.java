@@ -35,4 +35,9 @@ public class RoomServiceImp implements RoomService {
     public boolean deleteGuest(Room room) {
         return roomDao.updateRoomOutOfGuestId(room);
     }
+
+    @Override
+    public boolean exchangeGuestAndOwner(Room room) {
+        return roomDao.exchangeGuestAndOwner(room);
+    }
 }

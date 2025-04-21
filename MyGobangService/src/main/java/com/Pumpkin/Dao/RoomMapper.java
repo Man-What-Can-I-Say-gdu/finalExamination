@@ -37,5 +37,10 @@ public interface RoomMapper {
      */
     public boolean updateRoomWithguestId(Room room, int guestId);
 
-    boolean updateRoomOutOfGuestId(Room room);
+    public boolean updateRoomOutOfGuestId(Room room);
+
+    /**
+     * 交换房主房客id
+     */
+    public boolean exchangeGuestAndOwner(Room room);
 }

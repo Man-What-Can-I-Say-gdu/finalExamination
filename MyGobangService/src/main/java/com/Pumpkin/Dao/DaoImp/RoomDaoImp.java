@@ -7,6 +7,7 @@ import com.Pumpkin.entity.Room;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class RoomDaoImp implements RoomMapper {
@@ -117,6 +118,10 @@ public class RoomDaoImp implements RoomMapper {
 
     @Override
     public boolean updateRoomWithguestId(Room room,int guestId) {
+        Room requireRoom = selectRoomById(room.getRoomId());
+        if(requireRoom.getGuestId() != 0){
+            return false;
+        }
         String SQL = "update room set guestId=? where RoomId=?";
         try(Connection connection = ConnectionPool.GetConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(SQL)){
@@ -148,4 +153,22 @@ public class RoomDaoImp implements RoomMapper {
         }
 
     }
+
+    @Override
+    public boolean exchangeGuestAndOwner(Room room) {
+        String SQL = "update room set guestId=?, ownerId=? where RoomId = ?";
+        try(Connection connection = ConnectionPool.GetConnection();
+            PreparedStatement preparedStatement = connection.prepareStatement(SQL)) {
+            preparedStatement.setInt(1,room.getOwnerId());
+            preparedStatement.setInt(2,room.getGuestId());
+            preparedStatement.setString(3,room.getRoomId());
+            int result = preparedStatement.executeUpdate();
+            preparedStatement.close();
+            ConnectionPool.RecycleConnection(connection);
+            return result>0;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }

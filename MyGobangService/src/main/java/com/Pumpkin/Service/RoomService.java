@@ -28,5 +28,15 @@ public interface RoomService {
      */
     public boolean destoryRoom(String roomId);
 
-    boolean deleteGuest(Room room);
+    /**
+     * 删除guestId
+     * @param room
+     * @return
+     */
+    public boolean deleteGuest(Room room);
+
+    /**
+     * 将guestId和ownerId翻转
+     */
+    public boolean exchangeGuestAndOwner(Room room);
 }
