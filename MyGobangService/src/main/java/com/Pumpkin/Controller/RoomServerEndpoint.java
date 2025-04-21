@@ -7,17 +7,17 @@ import com.alibaba.fastjson2.JSON;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 
-import javax.websocket.OnMessage;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
+import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 
 
-@ServerEndpoint("/Room/")
+@ServerEndpoint("/Room")
 public class RoomServerEndpoint {
     /**
      * 存储客户端的url和session
@@ -34,7 +34,18 @@ public class RoomServerEndpoint {
         //sessionURL是唯一id，在建立连接后将数据添加到clients
         clients.put(SessionURL,session);
         this.session = session;
-        sendTextMessage(this.session,"success");
+        sendTextMessage(this.session,"connectSuccess");
+        //启动一个定时器，发送ping消息到客户端
+        Timer timer = new Timer();
+        //每30秒发送一次ping消息
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                session.getAsyncRemote().sendText("ping!");
+            }
+        },0,30000);
+        //1分钟为接收到响应则客户端离线，自动断开
+        session.setMaxIdleTimeout(60000L);
     }
 
     @OnMessage
@@ -50,9 +61,13 @@ public class RoomServerEndpoint {
             throw new RuntimeException(e);
         }
         if("buildRoom".equals(infoPart[0])){
-
+            buildRoom(room);
         }else if("joinRoom".equals(infoPart[0])){
-
+            joinRoom(room.getGuestId(),room);
+        }else if("exitRoom".equals(infoPart[0])){
+            exitRoom(room);
+        }else if("updateRoom".equals(infoPart[0])){
+            updateRoom(room);
         }
     }
     private static Room parseRoom(String roomJson) throws IOException {
@@ -70,6 +85,11 @@ public class RoomServerEndpoint {
             //房主客户端响应加入房间的请求，此时携带的数据为用户的数据，直接将数据传递给房客即可
             sendBytesMessage(roomGuest.get(room.getGuestId()),info);
         }
+    }
+
+    @OnMessage
+    public void onPong(PongMessage message){
+        //接收到Pong消息
     }
 
     /**
@@ -90,9 +110,9 @@ public class RoomServerEndpoint {
             //向数据库中添加用户数据成功，此时向房主客户端发送加房通知，并向房客发送加房成功通知
             room = roomServiceImp.selectRoom(room.getRoomId());
             //向房主发送加房通知，通知格式为Json字符串包含房客信息
-            sendTextMessage(this.session,"JoinInNotice");
+            sendTextMessage(this.session,"joinInNotice");
             //向房客发送加房成功通知
-            sendTextMessage(this.session,"success");
+            sendTextMessage(this.session,"joinInSuccess");
             //发送完后等待客户端相响应数据
         }
     }
@@ -103,13 +123,11 @@ public class RoomServerEndpoint {
      */
     public void updateRoom(Room room) {
         if(roomServiceImp.updateRoom(room)){
-            //向房主发送修改信息
-            sendTextMessage(this.session,JSON.toJSONString(room));
             if(room.getGuestId() != 0){
-                sendTextMessage(roomGuest.get(room.getGuestId()),JSON.toJSONString(room));
+                sendTextMessage(roomGuest.get(room.getGuestId()),"roomInfo."+JSON.toJSONString(room));
             }
         }else{
-            sendTextMessage(this.session,"false");
+            sendTextMessage(this.session,"updateRoomFalse");
         }
     }
     public void exitRoom(Room room) {
@@ -175,6 +193,16 @@ public class RoomServerEndpoint {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @OnClose
+    public void onClose(Session session){
+
+    }
+
+    @OnError
+    public void onError(Session session){
+
     }
 
 }
