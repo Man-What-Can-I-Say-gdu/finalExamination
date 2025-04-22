@@ -3,6 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <title>Room</title>
+
+    <style>
+        .StartGamerButton {
+            position: fixed;
+            bottom: 100px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            padding: 10px;
+            box-shadow: 0 -2px 10px rgba(01, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .ownerAvatar{
+            position: fixed;
+            left :0;
+            right :0;
+            text-align :center;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(01, 0, 0, 0.1);
+            z-index: 1000;
+        }
+        .guestAvatar{
+            position: fixed;
+            bottom: 200px;
+            left :0;
+            right :0;
+            text-align :center;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(01, 0, 0, 0.1);
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
 <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
@@ -11,5 +44,64 @@
 <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
 <!-- 引入组件库 -->
 <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+<div id="roomWindow" class="roomWindow">
+    <div class="ownerAvatar">
+        <el-avatar :size="100" :src="circleUrl"></el-avatar>
+        <div class="sub-title">{{owner.name}}</div>
+    </div>
+    <div class="exitButton">
+        <el-button type="danger" @click="$exit()">退出房间</el-button>
+    </div>
+
+
+
+    <div class="guestAvatar">
+        <el-avatar :size="100" :src="circleUrl"></el-avatar>
+        <div class="sub-title">{{guest.name}}</div>
+    </div>
+    <div class="StartGamerButton">
+        <el-button type="warning" @click="$startGamer()" round size="medium">开始游戏</el-button>
+    </div>
+</div>
 </body>
+
+<script>
+
+    new Vue({
+        el:"#roomWindow",
+        data(){
+            return{
+                User:{
+                    id:'',
+                    name:'',
+                    email:'',
+                    phoneNumber:''
+                },
+                Room:{
+                    roomId:'',
+                    guestId:0,
+                    ownerId:0,
+                    password:'',
+                    isPublic:false
+                },
+                owner:{
+                    id:'',
+                    name:'',
+                    email:'',
+                    phoneNumber:''
+                },
+                guest:{
+                    id:'',
+                    name:'',
+                    email:'',
+                    phoneNumber:''
+                }
+            }
+        }
+
+
+    })
+
+</script>
 </html>

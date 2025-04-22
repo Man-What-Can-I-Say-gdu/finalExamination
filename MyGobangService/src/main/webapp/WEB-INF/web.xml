@@ -4,4 +4,9 @@
 
 <web-app>
   <display-name>Archetype Created Web Application</display-name>
+  <!--注册监听器-->
+  <listener>
+    <listener-class>com.Pumpkin.Controller.WebSocketInitializer</listener-class>
+  </listener>
 </web-app>
+

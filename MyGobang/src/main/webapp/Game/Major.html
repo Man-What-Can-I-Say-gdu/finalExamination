@@ -20,10 +20,10 @@
     <el-card class="MajorOperation"  body-style="10px">
         <el-rol>
             <el-button type="primary" class="button-spacing">快速匹配</el-button>
-            <el-button type="primary" @click="buildRoom = true">创建房间</el-button>
+            <el-button type="primary" @click="isBuildRoom = true">创建房间</el-button>
 
 
-            <el-dialog title="创建房间" :visible.sync="buildRoom">
+            <el-dialog title="创建房间" :visible.sync="isBuildRoom">
                 <el-form :model="roomInfo" prop="roomInfo">
                     <el-form-item label="是否公开">
                         <!--通过选择的Ispublic值展开room的输入框-->
@@ -40,7 +40,19 @@
                     </el-form-item>
                 </el-form>
             </el-dialog>
-            <el-button type="primary">加入房间</el-button>
+
+
+            <el-button type="primary" @click="isJoinRoom = true">加入房间</el-button>
+            <el-dialog title="加入房间" :visible.sync="isJoinRoom" >
+                <el-form :model="roomInfo" prop="roomInfo">
+                    <el-form-item label="房间id" :model="roomInfo">
+                        <el-input v-model="roomInfo.roomId" placeholder="请输入房间号" label="房间id"></el-input>
+                    </el-form-item>
+                    <el-form-item label="房间密码">
+                        <el-input v-model="roomInfo.password" placeholder="请输入房间密码(如果房间公开，请忽略)" label="房间密码"></el-input>
+                    </el-form-item>
+                </el-form>
+            </el-dialog>
         </el-rol>
         <el-rol>
             <el-button type="primary" @click="showGamerInfo()">个人信息</el-button>
@@ -73,7 +85,8 @@
                     ownerId:'',
                     guestId:''
                 },
-                buildRoom:false,
+                isBuildRoom:false,
+                isJoinRoom:false,
                 formLabelWidth:'120px',
                 roomRules:{
                     password:
@@ -91,6 +104,11 @@
                 sessionStorage.setItem('Gamer',JSON.stringify(this.Gamer));
                 sessionStorage.setItem('Authorization',JSON.stringify(this.Authorization))
                 window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/GamerInfo/ShowGamerInfo.html','_self')
+            },
+            buildRoom(){
+                //创建房间函数，主要负责保存数据并进行页面跳转
+                localStorage.setItem("Room",this.roomInfo)
+                window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Room/Room.html','_self')
             }
         },
         created(){
