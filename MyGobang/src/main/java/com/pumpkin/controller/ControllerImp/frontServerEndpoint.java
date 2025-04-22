@@ -2,6 +2,9 @@ package com.pumpkin.controller.ControllerImp;
 
 
 import com.alibaba.fastjson2.JSON;
+import com.pumpkin.Service.ServiceImp.ChessStyleServiceImp;
+import com.pumpkin.Service.ServiceImp.UserServiceImp;
+import com.pumpkin.entity.Chess;
 import com.pumpkin.entity.Room;
 import com.pumpkin.entity.User;
 
@@ -24,13 +27,18 @@ public class frontServerEndpoint {
     Room room = new Room();
     User owner = new User();
     User guest = new User();
+    UserServiceImp userServiceImp = new UserServiceImp();
+    String chessStyleId;
+    Chess chess = new Chess();
+    ChessStyleServiceImp chessStyleServiceImp = new ChessStyleServiceImp();
     /**
      * 正在操作的User
      */
     User operateUser = new User();
     @OnOpen
-    public void Onopen(Session session) {
+    public void Onopen(Session session,int id) {
         this.session = session;
+        this.operateUser = userServiceImp.selectUserById(id);
     }
 
     /**
@@ -76,6 +84,16 @@ public class frontServerEndpoint {
                         }
                     }
                 }
+            }else if("chessing".equals(infoParts[0])){
+                //得到棋子数据
+                chess = parseToChess(infoParts[1]);
+                if(chess == null){
+                    //棋子为空，说明数据传输出现问题
+                    sendStringInfo("ChessingError");
+                }else{
+                    //将棋子数据传递到chess中
+                    chessStyleServiceImp.insertChess(chessStyleId,chess);
+                }
             }
         }else if(infoParts.length == 1){
             //此时为第二种
@@ -104,11 +122,14 @@ public class frontServerEndpoint {
                     clearUserData(guest);
                     room.setGuestId(0);
                 }
+            }else if("joinInNotice".equals(info)){
+                //房客申请进入房间的请求，传递房主数据的json字符串
+                sendStringInfo(JSON.toJSONString(operateUser));
+            }else if("joinInSuccess".equals(info)){
+                sendStringInfo(JSON.toJSONString(operateUser));
             }
         }
     }
-
-
     private Room parseToRoom(String roomInfo){
         if(roomInfo == null){
             return null;
@@ -162,5 +183,12 @@ public class frontServerEndpoint {
         user.setPhoneNumber(null);
         user.setSalt(null);
 
+    }
+
+    private Chess parseToChess(String chessInfo){
+        if(chessInfo == null){
+            return null;
+        }
+        return JSON.parseObject(chessInfo,Chess.class);
     }
 }

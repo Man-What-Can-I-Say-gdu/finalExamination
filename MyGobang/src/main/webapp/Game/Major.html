@@ -36,7 +36,7 @@
                         <el-input v-model="roomInfo.password" placeholder="请输入房间密码" label="房间密码" ></el-input>
                     </el-form-item>
                     <el-form-item>
-                        <el-button  type="primary" @click="buildRoom">创建房间</el-button>
+                        <el-button  type="primary" @click="buildRoom()">创建房间</el-button>
                     </el-form-item>
                 </el-form>
             </el-dialog>
@@ -45,10 +45,10 @@
             <el-button type="primary" @click="isJoinRoom = true">加入房间</el-button>
             <el-dialog title="加入房间" :visible.sync="isJoinRoom" >
                 <el-form :model="roomInfo" prop="roomInfo">
-                    <el-form-item label="房间id" :model="roomInfo">
+                    <el-form-item label="房间id" :model="roomInfo.roomId">
                         <el-input v-model="roomInfo.roomId" placeholder="请输入房间号" label="房间id"></el-input>
                     </el-form-item>
-                    <el-form-item label="房间密码">
+                    <el-form-item label="房间密码" :model="roomInfo.password">
                         <el-input v-model="roomInfo.password" placeholder="请输入房间密码(如果房间公开，请忽略)" label="房间密码"></el-input>
                     </el-form-item>
                 </el-form>
@@ -64,10 +64,21 @@
 </body>
 
 <script>
+    const worker = new SharedWorker("sharedWebsocket.js");
+    worker.middlePort.postMessage({
+        type:"connect",
+        middleServerURL:"ws://101.37.135.39:8081/MyGobang/Room",
+    });
+    const middleServerURL ="ws://101.37.135.39:8081/MyGobang/Room";
+    const backServerURL = "ws://localhost:8082/MyGobang/GameImp";
     new Vue({
         el:"#Major",
         data(){
             return{
+
+                messages: [],
+                connectionStatus: '未连接',
+                worker: null,
                 Gamer:{
                     id:'',
                     dan:'',
@@ -99,19 +110,140 @@
                 user:''
             }
         },
-        methods:{
+        methods: {
+            connect() {
+                if (!this.worker) {
+                    this.worker = new SharedWorker(middleServerURL, backServerURL);
+                    this.worker.middlePort.start();
+                    this.worker.backPort.start();
+
+                    //监听消息
+                    // 监听 Worker 发来的消息
+                    this.worker.port.onmessage = (e) => {
+                        const {type, data} = e.data;
+
+                        switch (type) {
+                            case 'message':
+                                this.messages.push(`收到: ${data}`);
+                                break;
+                            case 'status':
+                                this.connectionStatus = data;
+                                this.isConnected = data === 'connected';
+                                this.messages.push(`状态: ${data}`);
+                                break;
+                            case 'error':
+                                this.messages.push(`错误: ${data}`);
+                                break;
+                        }
+                    };
+
+                    //发送来连接命令
+                    this.worker.middlePort.postMessage({
+                        type: 'connect',
+                        data: {url: this.middleServerURL}
+                    });
+                    //发送来连接命令
+                    this.worker.backPort.postMessage({
+                        type: 'connect',
+                        data: {url: this.backServerURL}
+                    });
+
+
+                }
+            },
+            sendToMiddle() {
+                if (this.messageToSend.trim() && this.worker) {
+                    this.worker.middlePort.postMessage({
+                        type: 'send',
+                        data: this.messageToSend
+                    });
+                    this.messages.push(`发送: ${this.messageToSend}`);
+                    this.messageToSend = '';
+                }
+            },
+            sendToBack() {
+                if (this.messageToSend.trim() && this.worker) {
+                    this.worker.backPort.postMessage({
+                        type: 'send',
+                        data: this.messageToSend
+                    });
+                    this.messages.push(`发送: ${this.messageToSend}`);
+                    this.messageToSend = '';
+                }
+            },
+            closeMiddle() {
+                if (this.worker) {
+                    this.worker.middlePort.postMessage({
+                        type: 'close'
+                    });
+                }
+            },
+            closeBack() {
+                if (this.worker) {
+                    this.worker.BackPort.postMessage({
+                        type: 'close'
+                    });
+                }
+            },
+            beforeMiddleDestroy() {
+                if (this.worker) {
+                    this.close();
+                    this.worker.middlePort.close();
+                }
+            },
+            beforeBackDestroy() {
+                if (this.worker) {
+                    this.close();
+                    this.worker.backport.close();
+                }
+            },
             showGamerInfo(){
                 sessionStorage.setItem('Gamer',JSON.stringify(this.Gamer));
                 sessionStorage.setItem('Authorization',JSON.stringify(this.Authorization))
+                sessionStorage.setItem('session',this.session)
                 window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/GamerInfo/ShowGamerInfo.html','_self')
             },
             buildRoom(){
+                //向中继服务器发送创建房间请求
+                this.send("buildRoom."+JSON.toString(this.roomInfo))
                 //创建房间函数，主要负责保存数据并进行页面跳转
                 localStorage.setItem("Room",this.roomInfo)
                 window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Room/Room.html','_self')
-            }
-        },
+            },
+            },
+            exitFromMiddle() {
+                if (this.middleServerWs) {
+                    this.middleServerWs.close();
+                    this.middleServerWs = null;
+                }
+            },
+            exitFromBack() {
+                if (this.backServerWs) {
+                    this.backServerWs.close();
+                    this.backServerWs = null;
+                }
+            },
+            middleServerSend() {
+                if (this.middleServerWs) {
+                    this.middleServerWs.send(this.message);
+                } else {
+                    alert("未连接到服务器");
+                }
+            },
+            backServerSend(){
+                if(this.backServerWs){
+                    this.backServerWs.send(this.message)
+                }else{
+                    alert("未连接到服务器");
+                }
+            },
+            //重置
+            resetForm() {
+                this.message = "";
+                this.text_content = "";
+            },
         created(){
+            //创建SharedWorker
             this.Gamer.id = localStorage.getItem("gamerId");
             this.Authorization = localStorage.getItem("Authorization");
             axios.post("http://localhost:8080/MyGobang/Gamer/Major/getGamer",
@@ -127,6 +259,7 @@
                 }else{
                     alert("获取gamer失败:"+response.data.message)
                 }
+                this.join()
             }).catch(err=>{
                 console.log(err)
             })
