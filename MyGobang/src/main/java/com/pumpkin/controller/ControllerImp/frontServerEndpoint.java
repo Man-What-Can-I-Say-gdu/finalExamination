@@ -179,15 +179,6 @@ public class frontServerEndpoint {
                     //游戏过程中，操作用户使用悔棋，将前两步的数据清空
                     chessStyleControllerImp.Repentance(chessStyleId, chess, isBlack);
                     break;
-                case "third":
-                    //三三禁手
-                    break;
-                case "forth":
-                    //四四禁手
-                    break;
-                case "forbid":
-                    //长连禁手
-                    break;
             }
         }
     }

@@ -10,7 +10,7 @@ public class WebSocketInitializer implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent servletContextEvent) {
         ServerContainer container = (ServerContainer) servletContextEvent.getServletContext().getAttribute(ServerContainer.class.getName());
-        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(RoomServerEndpoint.class,"/Room").build();
+        ServerEndpointConfig config = ServerEndpointConfig.Builder.create(middleServerEndpoint.class,"/Room").build();
         try {
             container.addEndpoint(config);
         } catch (DeploymentException e) {

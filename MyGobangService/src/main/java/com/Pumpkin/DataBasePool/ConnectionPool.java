@@ -15,15 +15,15 @@ import java.util.logging.Logger;
 public class ConnectionPool implements DataSource {
     //正在使用的Connection对象池，使用Vector集合保证线程安全（起初用过ArrayList数组，但编写到一般查资料才发现Arraylist的没有同步机制
     //使用DataConn得到使用的开始时间，通过当前时间与开始时间相减能得到运行时间，用于判断是否使用超时
-    private final static Vector<DataBasePool.DataConn> UsingConnPool = new Vector<>();
+    private final static Vector<DataConn> UsingConnPool = new Vector<>();
     //空闲的Connection对象池
     private final static Vector<Connection> FreeConnPool = new Vector<>();
 
     //获取配置信息
-    protected static final DataBasePool.ConnectionPoolConfig config;
+    protected static final ConnectionPoolConfig config;
     static {
         try {
-            config = DataBasePool.ConnectionPoolConfig.GetConfig();
+            config = ConnectionPoolConfig.GetConfig();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -145,7 +145,7 @@ public class ConnectionPool implements DataSource {
                     }
 
                 }
-            }, Long.parseLong(DataBasePool.ConnectionPoolConfig.getPoolConfig().getPeriod()));
+            }, Long.parseLong(ConnectionPoolConfig.getPoolConfig().getPeriod()));
         }
     }
     //release强制回收连接

@@ -16,6 +16,6 @@ public class HistoricGameServiceImp implements HistoricGameService {
 
     @Override
     public boolean insertHistoricGame(HistoricGame historicGame) {
-        return false;
+        return historicGameImp.saveGame(historicGame);
     }
 }
