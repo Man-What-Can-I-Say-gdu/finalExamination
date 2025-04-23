@@ -14,12 +14,13 @@ public interface ChessStyle {
     /**
      * 添加棋子位置
      */
-    public boolean insertChessPosition(String chessStyleId, String position,int steps);
+    public boolean insertChessPosition(String chessStyleId, String position,int steps,boolean type);
 
     /**
      * 悔棋功能：通过id（落子步数）进行回退,一次退回两颗
+     * @param myType 悔棋方的花色
      */
-    public boolean removeChessPosition(String chessStyleId,int steps);
+    public boolean removeChessPosition(String chessStyleId,Chess chess,boolean myType);
 
     /**
      * 查找整个棋盘的数据

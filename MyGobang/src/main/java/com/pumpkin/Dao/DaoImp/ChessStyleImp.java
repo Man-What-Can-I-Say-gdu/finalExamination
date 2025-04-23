@@ -21,7 +21,7 @@ public class ChessStyleImp implements ChessStyle {
     @Override
     public boolean buildChessBoard(String chessStyleId) {
         //操作数据表
-        String buildTableSQL = "create table ? ( steps int , position char(2), forward boolean, rear boolean, theLeft boolean,theRight boolean,leftFront boolean,rightFront boolean,leftRear boolean,rightRear boolean);";
+        String buildTableSQL = "create table ? ( steps int , position char(2), forward boolean, rear boolean, theLeft boolean,theRight boolean,leftFront boolean,rightFront boolean,leftRear boolean,rightRear boolean,type boolean);";
         int result;
         try {
             Connection connection = ConnectionPool.GetConnection();
@@ -38,8 +38,8 @@ public class ChessStyleImp implements ChessStyle {
 
 
     @Override
-    public boolean insertChessPosition(String chessStyleId, String position, int steps) {
-        String SQL = "insert into ? (postion, steps) values (? ,?)";
+    public boolean insertChessPosition(String chessStyleId, String position, int steps,boolean type) {
+        String SQL = "insert into ? (postion, steps,type) values (? ,? ,?)";
         int result = 0;
         try {
             Connection connection = ConnectionPool.GetConnection();
@@ -47,6 +47,7 @@ public class ChessStyleImp implements ChessStyle {
             preparedStatement.setString(1, chessStyleId);
             preparedStatement.setString(2, position);
             preparedStatement.setInt(3, steps);
+            preparedStatement.setBoolean(4,type);
             result = preparedStatement.executeUpdate();
             preparedStatement.close();
             ConnectionPool.RecycleConnection(connection);
@@ -56,26 +57,43 @@ public class ChessStyleImp implements ChessStyle {
         return result == 1;
     }
 
+    /**
+     * 悔棋时为己方，并且未下棋，因此要先查看上一个是否为同色棋，未下棋时，棋子保存的是上一步的数据
+     * @param chessStyleId
+     * @param chess
+     * @return
+     */
     @Override
-    public boolean removeChessPosition(String chessStyleId,int steps) {
+    public boolean removeChessPosition(String chessStyleId,Chess chess,boolean myType) {
         String SQL = "delete from ? where steps = ?";
+        String selectSQL = "select type from ? where steps = ?";
         int result = 0;
         try {
             Connection connection = ConnectionPool.GetConnection();
-            PreparedStatement preparedStatement = connection.prepareStatement(SQL);
-            preparedStatement.setString(1, chessStyleId);
-            preparedStatement.setInt(2, steps);
-            result += preparedStatement.executeUpdate();
-            //执行第二次
-            preparedStatement.setString(1, chessStyleId);
-            preparedStatement.setInt(2,steps - 1);
-            result+=preparedStatement.executeUpdate();
+            PreparedStatement preparedStatement = connection.prepareStatement(selectSQL);
+            //记录上一步棋的棋子花色
+            boolean isBlack = false;
+            ResultSet resultSet;
+            do{
+                //查看上一步是否为同色棋
+                preparedStatement.setString(1, chessStyleId);
+                preparedStatement.setInt(2, chess.getSteps());
+                //获取查询到的花色数据
+                resultSet = preparedStatement.executeQuery();
+                resultSet.next();
+                isBlack = resultSet.getBoolean("type");
+                //花色相同只悔棋一步，花色不同一直悔棋到自己的第一颗棋子
+                preparedStatement.setString(1, chessStyleId);
+                preparedStatement.setInt(2,chess.getSteps());
+                result = preparedStatement.executeUpdate();
+                //判断是否悔棋到自己的棋
+            }while(isBlack == myType);
             preparedStatement.close();
             ConnectionPool.RecycleConnection(connection);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return result == 2;
+        return result > 0;
     }
 
     @Override
@@ -104,6 +122,7 @@ public class ChessStyleImp implements ChessStyle {
     /**
      *
      * 查找特定位置是否存在棋子并获得棋子类型,并获取相同方向的下一个棋子是否为同色棋子
+     * @param x,y 要查找的棋子的x和y坐标
      * @param direction 指定查找的方位
      *
      */
@@ -111,27 +130,42 @@ public class ChessStyleImp implements ChessStyle {
         String SQL = "select * from ? where position = ?";
         Chess chess = new Chess();
         String chessPosition = getPositionString(direction, x, y);
-        if (chessPosition == null) return null;
+        if (chessPosition == null)
+            //当位置超出棋盘边缘时，返回null
+            return null;
         try {
             Connection connection = ConnectionPool.GetConnection();
             PreparedStatement preparedStatement = connection.prepareStatement(SQL);
             preparedStatement.setString(1, chessStyleId);
             preparedStatement.setString(2, chessPosition);
             ResultSet resultSet = preparedStatement.executeQuery();
-            while(resultSet.next()){
-                //获取棋子再特定方向上是否有同色棋子,使用反射
+            if(resultSet.next()){
+                //存在棋子
+                chess.setExist(true);
+                //获取棋子再特定方向是否有同色棋子,使用反射
                 Method method = Chess.class.getMethod("set"+direction,boolean.class);
                 //执行方法
                 method.invoke(chess,resultSet.getBoolean(direction));
+                //更新棋子位置
                 chess.setPosition(chessPosition);
-                //获取潜力，潜力为0则直接退出循环
-                chess.setPotential(resultSet.getString("Potential").toCharArray()[0]);
+            }else{
+                chess.setExist(false);
             }
+            preparedStatement.close();
+            ConnectionPool.RecycleConnection(connection);
+            return chess;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        return chess;
     }
+
+    /**
+     * 获取指定的方位位置坐标
+     * @param direction
+     * @param x
+     * @param y
+     * @return
+     */
 
     public String getPositionString(String direction, int x, int y) {
         //获取存入的方向值
@@ -195,6 +229,10 @@ public class ChessStyleImp implements ChessStyle {
         }
         return result > 0;
     }
+
+    /**
+     *
+     */
 
 //    /**
 //     * 查找一颗棋子周围的棋子的情况

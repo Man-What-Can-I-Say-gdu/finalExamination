@@ -13,7 +13,7 @@ public interface ChessStyleController {
     /**
      * 添加棋子数据
      */
-    public void insertChess(String chessStyleId, Chess chess);
+    public boolean insertChess(String chessStyleId, Chess chess);
 
     /**
      * 获取最终棋盘数据
@@ -23,7 +23,7 @@ public interface ChessStyleController {
     /**
      * 悔棋
      */
-    public void Repentance(String chessStyleId,int steps);
+    public void Repentance(String chessStyleId,Chess chess,boolean myType);
 
 
 

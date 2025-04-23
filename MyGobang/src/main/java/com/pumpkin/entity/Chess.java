@@ -10,6 +10,10 @@ public class Chess {
      */
     private int steps;
     /**
+     * 棋子的颜色：真为黑，假为白
+     */
+    private boolean type;
+    /**
      * y-1处是否存在同色棋
      */
     private boolean forward;
@@ -47,10 +51,19 @@ public class Chess {
      * x+1,y+1是否存在同色棋
      */
     private boolean rightRear;
+
     /**
-     * 棋子连线
+     * 是否存在棋子
      */
-    private char potential;
+    private boolean isExist;
+
+    public boolean isExist() {
+        return isExist;
+    }
+
+    public void setExist(boolean exist) {
+        isExist = exist;
+    }
 
     public boolean isForward() {
         return forward;
@@ -90,14 +103,6 @@ public class Chess {
 
     public void setPosition(String position) {
         this.position = position;
-    }
-
-    public char getPotential() {
-        return potential;
-    }
-
-    public void setPotential(char potential) {
-        this.potential = potential;
     }
 
     public boolean isRear() {
@@ -143,17 +148,25 @@ public class Chess {
     public Chess() {
     }
 
-    public Chess(boolean forward, boolean left, boolean leftFront, boolean leftRear, String position, char potential, boolean rear, boolean right, boolean rightFront, boolean rightRear, int steps) {
+    public Chess(boolean forward, boolean leftFront, boolean leftRear, String position, boolean rear, boolean rightFront, boolean rightRear, int steps, boolean theLeft, boolean theRight, boolean type) {
         this.forward = forward;
-        this.theLeft = left;
         this.leftFront = leftFront;
         this.leftRear = leftRear;
         this.position = position;
-        this.potential = potential;
         this.rear = rear;
-        this.theRight = right;
         this.rightFront = rightFront;
         this.rightRear = rightRear;
         this.steps = steps;
+        this.theLeft = theLeft;
+        this.theRight = theRight;
+        this.type = type;
+    }
+
+    public boolean isType() {
+        return type;
+    }
+
+    public void setType(boolean type) {
+        this.type = type;
     }
 }

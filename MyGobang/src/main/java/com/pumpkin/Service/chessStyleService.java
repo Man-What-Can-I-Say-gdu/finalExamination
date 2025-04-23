@@ -3,6 +3,7 @@ package com.pumpkin.Service;
 import com.pumpkin.entity.Chess;
 
 import java.util.ArrayList;
+import java.util.Map;
 
 public interface chessStyleService {
     /**
@@ -18,7 +19,7 @@ public interface chessStyleService {
     /**
      * 悔棋功能实现
      */
-    public boolean moveChess(String chessStyleId, int steps);
+    public boolean moveChess(String chessStyleId, Chess chess,boolean myType);
 
     /**
      * 查看最终棋盘
@@ -29,19 +30,19 @@ public interface chessStyleService {
     /**
      * 查询y轴方位上是否有足够数量的棋子
      */
-    public boolean findYIsSuccess(String chessStyleId,Chess chess);
+    public Map<String,Object> findYIsSuccess(String chessStyleId, Chess chess);
     /**
      * 查询x轴方位上是否有足够数量的棋子
      */
-    public boolean findXIsSuccess(String chessStyleId,Chess chess);
+    public Map<String,Object> findXIsSuccess(String chessStyleId,Chess chess);
 
     /**
      * 查询正对角线方位上是否有足够数量的棋子
      */
-    public boolean findDiagonalIsSuccess(String chessStyleId,Chess chess);
+    public Map<String,Object> findDiagonalIsSuccess(String chessStyleId,Chess chess);
 
     /**
      * 查询反对角线上是否有足够数量的棋子
      */
-    public boolean findAntiDiagonalIsSuccess(String chessStyleId,Chess chess);
+    public Map<String,Object> findAntiDiagonalIsSuccess(String chessStyleId,Chess chess);
 }
