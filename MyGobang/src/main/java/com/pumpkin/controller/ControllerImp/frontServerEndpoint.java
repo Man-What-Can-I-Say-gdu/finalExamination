@@ -23,7 +23,7 @@ import java.util.Random;
 /**
  * 负责处理前端发送的数据
  */
-@ServerEndpoint("/MyGobang/GameImp")
+@ServerEndpoint("/MyGobang/Game")
 public class frontServerEndpoint {
     /**
      * 前端与后端的连接
@@ -170,10 +170,10 @@ public class frontServerEndpoint {
                     break;
                 case "joinInNotice":
                     //房客申请进入房间的请求，传递房主数据的json字符串
-                    sendStringInfo(JSON.toJSONString(operateUser));
+                    sendBinaryInfo(("ownerResponseToJoin."+JSON.toJSONString(operateUser)).getBytes());
                     break;
                 case "joinInSuccess":
-                    sendStringInfo(JSON.toJSONString(operateUser));
+                    sendBinaryInfo(("guestResponseToJoin."+JSON.toJSONString(operateUser)).getBytes());
                     break;
                 case "withdraw":
                     //游戏过程中，操作用户使用悔棋，将前两步的数据清空

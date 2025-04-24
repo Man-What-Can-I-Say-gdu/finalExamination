@@ -16,6 +16,7 @@ import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -138,6 +139,7 @@ public class middleServerEndpoint {
                     sendTextMessage(opponent.getSession(), "startGame"+GameId);
                     historicGame.setGameId(GameId);
                     historicGame.setStartTime(GameId.substring(0,13));
+                    Random random = new Random();
                 }
 
             }

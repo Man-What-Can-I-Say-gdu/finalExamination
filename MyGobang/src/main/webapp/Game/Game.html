@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GameBody</title>
+    <style>
+        .GameBody {
+            width: 800px;
+            height: 600px;
+            margin: 0 auto;
+        }
+    </style>
+
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<!-- 引入样式 -->
+<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
+<!-- 引入组件库 -->
+<script src="https://unpkg.com/element-ui/lib/index.js"></script>
+<script src="//cdn.jsdelivr.net/npm/phaser@3.86.0/dist/phaser.js"></script>
+<script src="//cdn.jsdelivr.net/npm/phaser@3.86.0/dist/phaser.min.js"></script>
+<div id="GameBody" class="GameBody">
+    <canvas id="game-canvas"></canvas>
+</div>
+<script>
+
+
+    const BOARD_SIZE = 15;
+    const CELL_SIZE = 30;
+    const BOARD_OFFSET = { x:190, y: 90 };
+
+
+     let occupiedGrid= []
+
+     const config = {
+          type: Phaser.AUTO,
+          width: 800,
+          height: 600,
+          parent: 'GameBody',
+          scene: {
+               preload: this.preload,
+               create: this.create,
+               update: this.update
+           }
+      }
+    function preload() {
+         this.load.image('board', 'assets/board.png')
+         this.load.image('whiteChess', 'assets/whiteChess.png')
+         this.load.image('blackChess', 'assets/blackChess.png')
+     }
+    const game =  new Phaser.Game(config);
+     let position ="";
+    function create () {
+        for (let i = 0; i < CELL_SIZE; i++) {
+            occupiedGrid[i] = new Array(BOARD_OFFSET).fill(false);
+        }
+        //连接socket
+        connect();
+        alert("成功连接")
+        let steps = 0;
+        let lock = false;
+        const board = this.add.image(400, 300, 'board');
+        const hitArea = new Phaser.Geom.Rectangle(0, 0, 450, 450);
+        board.setInteractive({
+            hitArea: hitArea,
+            hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+            useHandCursor: true
+        });
+        board.on('pointerdown', (pointer) => {
+
+            const localX = pointer.x - BOARD_OFFSET.x;
+            const localY = pointer.y - BOARD_OFFSET.y;
+
+            const col = Math.round(localX / CELL_SIZE);
+            const row = Math.round(localY / CELL_SIZE);
+
+            // 确保索引在棋盘范围内
+            if (col >= 0 && col < BOARD_SIZE && row >= 0 && row < BOARD_SIZE && !occupiedGrid[col][row] && !lock) {
+                // 计算实际落子坐标（交叉点中心）
+                const targetX = BOARD_OFFSET.x + col * CELL_SIZE;
+                const targetY = BOARD_OFFSET.y + row * CELL_SIZE;
+                occupiedGrid[col][row] = true;
+                if (steps % 2 === 0) {
+                    this.add.image(targetX, targetY, 'blackChess')
+                } else {
+                    this.add.image(targetX, targetY, 'whiteChess'); // 添加 this 前缀
+                }
+                steps += 1;
+                lock = true;
+                position = "("+(x+1)+","+(y+1)+")";
+                //向sharedWebsocket发送数据
+                this.worker.port.postMessage({region: 'front',type: 'back-message', data: {'position' : position}})
+                this.worker.port.postMessage({region: 'front',type: 'middle-message', data: {'position' : position}})
+            }
+        })
+    }
+    function update () {
+    }
+    function connect() {
+        const middleServerURL = "ws://101.37.135.39:8081/Game";
+        const backServerURL = "ws://localhost:8082/Back";
+        //获取socket连接
+        const worker = window.worker || new SharedWorker("sharedWebsocket.js");
+        window.worker = worker;
+        //进入连接后若未连接上可能会阻塞进程
+        worker.port.postMessage({
+            type: "connect-middle",
+            URL: this.middleServerURL,
+        });
+        worker.port.postMessage({
+            type: 'connect-back ',
+            URL: this.backServerURL
+        })
+        if (!this.worker) {
+            this.worker.port.start();
+            //监听消息
+            // 监听 Worker 发来的消息
+            this.worker.port.onmessage = (e) => {
+                const {type, region, data} = e.data;
+                if (type === "middle-message") {
+                    //处理中继服务器发来的信息
+                    handleMessageFromMiddle(data);
+                } else if (type === "back-message") {
+                    //处理后端服务器发来的通知
+                    handleMessageFromBack(data);
+                }
+            }
+
+        }
+
+    }
+
+        function handleMessageFromMiddle(data){
+            //处理中继服务器发来的信息
+
+        }
+
+        function handleMessageFromBack(data){
+        //处理前端发来的信息
+        }
+        //实现前端发送数据到js并进行解析转发
+        function sendToMiddle(msg) {
+            if(this.worker != null && msg != null && msg.trim){
+                this.worker.port.postMessage({
+                    data:{
+                        region: 'front',
+                        type: 'sendToMiddle',
+                        data: msg
+                    }
+                })
+            }
+        }
+        //将数据传输到js中并进行解析和转发
+        function sendToBack(msg) {
+            if(this.worker != null && msg != null && msg.trim){
+                this.worker.port.postMessage({
+                    data:{
+                        region: 'front',
+                        type: 'sendToBack',
+                        data: msg
+                    }
+                })
+            }
+        }
+
+        function closeMiddle() {
+            if (this.worker) {
+                this.worker.middlePort.postMessage({
+                    type: 'close'
+                });
+            }
+        }
+
+        function closeBack() {
+            if (this.worker) {
+                this.worker.BackPort.postMessage({
+                    type: 'close'
+                });
+            }
+        }
+
+        function beforeMiddleDestroy() {
+            if (this.worker) {
+                this.close();
+                this.worker.middlePort.close();
+            }
+        }
+
+        function beforeBackDestroy() {
+            if (this.worker) {
+                this.close();
+                this.worker.backport.close();
+            }
+        }
+
+</script>
+</body>
+</html>
