@@ -22,19 +22,30 @@
 <script src="//cdn.jsdelivr.net/npm/phaser@3.86.0/dist/phaser.js"></script>
 <script src="//cdn.jsdelivr.net/npm/phaser@3.86.0/dist/phaser.min.js"></script>
 <div id="GameBody" class="GameBody">
+    <el-button type="primary" @click="this.drawBack()">退出游戏</el-button>
     <canvas id="game-canvas"></canvas>
 </div>
 <script>
+    const operator ={name:'',id:'' ,gameIdentity:''}
+    new Vue({
+        el:'#GameBody',
+        data(){
+            return{
 
+            }
+        },
+        methods:{
 
+        }
+    })
     const BOARD_SIZE = 15;
     const CELL_SIZE = 30;
     const BOARD_OFFSET = { x:190, y: 90 };
-
-
-     let occupiedGrid= []
-
-     const config = {
+    //存放棋子占用情况的数组
+    let occupiedGrid= []
+    //存放棋子步数和位置的数组
+    let chessSite = []
+    const config = {
           type: Phaser.AUTO,
           width: 800,
           height: 600,
@@ -44,30 +55,59 @@
                create: this.create,
                update: this.update
            }
-      }
+    }
+    //退出游戏界面
+    function drawBack(){
+        window.open('Room.html','_self');
+    }
     function preload() {
          this.load.image('board', 'assets/board.png')
          this.load.image('whiteChess', 'assets/whiteChess.png')
          this.load.image('blackChess', 'assets/blackChess.png')
-     }
+        this.load.image('0','assets/zero.png')
+        this.load.image('1','assets/1.png')
+        this.load.image('2','assets/two.png')
+        this.load.image('3','assets/3png.png')
+        this.load.image('4','assets/four.png')
+        this.load.image('5','assets/5.png')
+        this.load.image('6','assets/6.png')
+        this.load.image('7','assets/7.png')
+        this.load.image('8','assets/8.png')
+        this.load.image('9','assets/9.png')
+    }
     const game =  new Phaser.Game(config);
-     let position ="";
+    let position ="";
+    let steps = 0;
+    let lock = false;
     function create () {
-        for (let i = 0; i < CELL_SIZE; i++) {
-            occupiedGrid[i] = new Array(BOARD_OFFSET).fill(false);
+        //初始化棋盘状态
+        for (let col = 0; col < BOARD_SIZE; col++) {
+            occupiedGrid[col] = [];
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                occupiedGrid[col][row] = {
+                    isExist: false,
+                    stepNumber: 0
+                }
+            }
         }
-        //连接socket
+        let chessImageContainer = this.add.container(0, 0)
+        chessImageContainer.setDepth(1)
+        //进行连接
         connect();
-        alert("成功连接")
-        let steps = 0;
-        let lock = false;
-        const board = this.add.image(400, 300, 'board');
+        let bgContainer = this.add.container(0, 0);
+        let board = this.add.image(400, 300, 'board');
+        bgContainer.add(board);
+        let stepCountTen = this.add.image(20, 28, steps / 10), stepCountOne = this.add.image(35, 28, steps % 10);
+        bgContainer.add(stepCountOne);
+        bgContainer.add(stepCountTen);
+        bgContainer.setDepth(0);
         const hitArea = new Phaser.Geom.Rectangle(0, 0, 450, 450);
         board.setInteractive({
             hitArea: hitArea,
             hitAreaCallback: Phaser.Geom.Rectangle.Contains,
             useHandCursor: true
         });
+        //监听点击事件
         board.on('pointerdown', (pointer) => {
 
             const localX = pointer.x - BOARD_OFFSET.x;
@@ -77,71 +117,208 @@
             const row = Math.round(localY / CELL_SIZE);
 
             // 确保索引在棋盘范围内
-            if (col >= 0 && col < BOARD_SIZE && row >= 0 && row < BOARD_SIZE && !occupiedGrid[col][row] && !lock) {
-                // 计算实际落子坐标（交叉点中心）
-                const targetX = BOARD_OFFSET.x + col * CELL_SIZE;
-                const targetY = BOARD_OFFSET.y + row * CELL_SIZE;
-                occupiedGrid[col][row] = true;
-                if (steps % 2 === 0) {
-                    this.add.image(targetX, targetY, 'blackChess')
-                } else {
-                    this.add.image(targetX, targetY, 'whiteChess'); // 添加 this 前缀
+            if(operator.gameIdentity === true && steps % 2 === 0){
+                if (col >= 0 && col < BOARD_SIZE && row >= 0 && row < BOARD_SIZE && !(occupiedGrid[col][row].isExist) && !lock) {
+                    //进行下棋操作
+                    chessing(col, row);
+                    //如果没有正确连接则无法进行上锁
+                    lock = true;
                 }
-                steps += 1;
-                lock = true;
-                position = "("+(x+1)+","+(y+1)+")";
-                //向sharedWebsocket发送数据
-                this.worker.port.postMessage({region: 'front',type: 'back-message', data: {'position' : position}})
-                this.worker.port.postMessage({region: 'front',type: 'middle-message', data: {'position' : position}})
-            }
-        })
-    }
-    function update () {
-    }
-    function connect() {
-        const middleServerURL = "ws://101.37.135.39:8081/Game";
-        const backServerURL = "ws://localhost:8082/Back";
-        //获取socket连接
-        const worker = window.worker || new SharedWorker("sharedWebsocket.js");
-        window.worker = worker;
-        //进入连接后若未连接上可能会阻塞进程
-        worker.port.postMessage({
-            type: "connect-middle",
-            URL: this.middleServerURL,
-        });
-        worker.port.postMessage({
-            type: 'connect-back ',
-            URL: this.backServerURL
-        })
-        if (!this.worker) {
-            this.worker.port.start();
-            //监听消息
-            // 监听 Worker 发来的消息
-            this.worker.port.onmessage = (e) => {
-                const {type, region, data} = e.data;
-                if (type === "middle-message") {
-                    //处理中继服务器发来的信息
-                    handleMessageFromMiddle(data);
-                } else if (type === "back-message") {
-                    //处理后端服务器发来的通知
-                    handleMessageFromBack(data);
+            }else{
+                if (col >= 0 && col < BOARD_SIZE && row >= 0 && row < BOARD_SIZE && !(occupiedGrid[col][row].isExist) && !lock) {
+                    //进行下棋操作
+                    chessing(col, row);
+                    lock = true;
                 }
             }
+        })
+        const chessing = (col, row) => {
+            // 计算实际落子坐标（交叉点中心）
+            const targetX = BOARD_OFFSET.x + col * CELL_SIZE;
+            const targetY = BOARD_OFFSET.y + row * CELL_SIZE;
+            occupiedGrid[col][row].isExist = true;
+            if (steps % 2 === 0) {
+                let blackChess = this.add.image(targetX, targetY, 'blackChess');
+                chessImageContainer.add(blackChess);
+                blackChess = null
+            } else {
+                let whiteChess = this.add.image(targetX, targetY, 'whiteChess'); // 添加 this 前缀
+                chessImageContainer.add(whiteChess);
+                whiteChess = null
+            }
+            steps += 1;
+            //重置计数功能
+            resetStepsExpend(stepCountOne, stepCountTen, steps);
+            position = "(" + col + "," + row + ")";
+            //向sharedWebsocket发送数据
+            this.worker.port.postMessage({region: 'front', type: 'back-message', data: {'position': position}})
+            this.worker.port.postMessage({region: 'front', type: 'middle-message', data: {'position': position}})
+        }
+        const resetStepsExpend = (stepCountOne, stepCountTen, steps) => {
+            stepCountOne.destroy();
+            stepCountTen.destroy();
+            stepCountTen = this.add.image(20, 28, parseInt(steps / 10));
+            stepCountOne = this.add.image(35, 28, steps % 10);
+        }
+    }
 
+        //更新对手的下棋的数据
+        const updateChess = (position,steps,lock) => {
+            let positionParts = position.split(",");
+            //获取行和列
+            let col = parseInt(positionParts[0].slice(1));
+            let row = parseInt(positionParts[1].slice(0,positionParts[1].length-2))
+            const targetX = BOARD_OFFSET.x + col * CELL_SIZE;
+            const targetY = BOARD_OFFSET.y + row * CELL_SIZE;
+            occupiedGrid[col][row] = true;
+            if (steps % 2 === 0) {
+                this.add.image(targetX, targetY, 'blackChess')
+            } else {
+                this.add.image(targetX, targetY, 'whiteChess'); // 添加 this 前缀
+            }
+            steps += 1;
+            lock = false;
         }
 
-    }
-
-        function handleMessageFromMiddle(data){
+        const victory = () => {
+            this.add.image(400,300,'victory');
+            //发送给前端的sharedwewbsocket进行处理
+            //发送给中继服务器
+            worker.port.postMessage({type: 'middle-message',data:'victory'});
+            //发送给后端服务器
+            worker.port.postMessage({type: 'back-message' , data:'victory'});
+            window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Game/Room.html','_self');
+        }
+        const lost = () => {
+            this.add.image(400,300,'lost');
+            window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Game/Room.html','_self');
+            //失败一方只需要将失败数据发送给后端服务器
+            worker.port.postMessage({type: 'back-message' , data:'lost'});
+        }
+        const withdraw = () => {
+            for (let i = 0; i < 2; i++) {
+                if (chessImageContainer.length > 0) {
+                    const lastIndex = chessImageContainer.length - 1;
+                    const lastChess = chessImageContainer.getAt(lastIndex);
+                    lastChess.destroy()
+                    chessImageContainer.remove(lastChess, true); // true表示销毁对象
+                }
+                steps--;
+                //设置为未下棋
+                occupiedGrid[occupiedGrid.length-1].isExist = false;
+            }
+        }
+        //进行重连，阻塞玩家下棋的进程
+        const reconnecting = () =>{
+            lock = true;
+            let reconnected = this.add.image(400,300,'reconnected');
+        }
+        //等待对手重连
+        const waitForOpponentReconnect = () =>{
+            lock = true;
+            let reconnected = this.add.image(400,300,'waitOpponentConnect');
+        }
+        //重连成功
+        const reconnectingSuccess = () =>{
+            lock = false;
+            const reconnect = bgContainer.getAt(baContainer.length-1);
+            reconnect.destory;
+            bgContainer.remove(reconnect,true)
+        }
+        //对手重连成功
+        const opponentReconnectSuccess = () =>{
+            lock = false;
+            const reconnect = bgContainer.getAt(baContainer.length-1);
+            reconnect.destory;
+            bgContainer.remove(reconnect,true)
+        }
+        //对手重连失败
+        const opponentReconnectFailed = () =>{
+        //对手判负
+            victory();
+        }
+        //重连失败
+        const resonnectFailed = () => {
+            lost();
+        }
+        const handleMessageFromMiddle = (data) =>{
             //处理中继服务器发来的信息
+            const message = {type:data.type,data:data.data}
+            if(typeof message.data === 'string'){
+                let msgParts = data.split(".")
+                if(msgParts.length === 2){
+                    switch (msgParts[0]){
+                        case "chessing":
+                            //发送的数据只包含棋子的position其他数据要从游戏中提取
+                            updateChess(JSON.parse(msgParts[1]).position,steps,lock);
+                            break;
+                        case "gamerIdentity":
+                            //获取角色的identity
+                            operator.gameIdentity = JSON.parse(infoParts[1]).gameIdentity
 
-        }
+                    }
+                }else if(msgParts.length === 1){
+                    switch(msgParts){
+                        case "opponentSurrender" || "opponentLost":
+                            victory();
+                            break;
+                        case "opponentVictory":
+                            lost();
+                            break;
+                        case "opponentWithdraw":
+                            withdraw();
+                            break;
+                        case "reconnecting":
+                            reconnecting()
+                            break;
+                        case "reconnectedSuccess":
+                            reconnectingSuccess()
+                            break;
+                        case "opponentLostConnect":
+                            //等待对手重连
+                            waitForOpponentReconnect();
+                            break;
+                        case "opponentReconnectSuccess":
+                            //对手重连成功
+                            opponentReconnectSuccess()
+                            break;
+                        case "opponentReconnectFailed":
+                            opponentReconnectFailed();
+                            break;
+                    }
+                }
+            }
+    }
 
-        function handleMessageFromBack(data){
-        //处理前端发来的信息
+        const handleMessageFromBack = (data) => {
+            //处理后端发来的信息
+            const message = {type:data.type,data:data.data}
+            if(typeof message.data === 'string'){
+                let msgParts = data.split("\\.")
+                if(msgParts.length === 2){
+                    switch (msgParts[0]){
+                        case "chessing":
+                            updateChess();
+                    }
+                }else if(msgParts.length === 1){
+                    switch(msgParts) {
+                        case "forbid": {
+                            //黑方禁手，直接判负，但要先判断操作者为先手后手
+                            if (this.operator.type === "black") {
+                                lost();
+                            }
+                            break;
+                        }
+                        case "victory": {
+                            victory();
+                            break;
+                        }
+                    }
+                }
+            }
         }
         //实现前端发送数据到js并进行解析转发
-        function sendToMiddle(msg) {
+        const sendToMiddle = (msg) => {
             if(this.worker != null && msg != null && msg.trim){
                 this.worker.port.postMessage({
                     data:{
@@ -153,7 +330,7 @@
             }
         }
         //将数据传输到js中并进行解析和转发
-        function sendToBack(msg) {
+        const sendToBack =(msg)=> {
             if(this.worker != null && msg != null && msg.trim){
                 this.worker.port.postMessage({
                     data:{
@@ -165,7 +342,7 @@
             }
         }
 
-        function closeMiddle() {
+        const closeMiddle =() => {
             if (this.worker) {
                 this.worker.middlePort.postMessage({
                     type: 'close'
@@ -173,7 +350,7 @@
             }
         }
 
-        function closeBack() {
+        const closeBack =()=> {
             if (this.worker) {
                 this.worker.BackPort.postMessage({
                     type: 'close'
@@ -181,19 +358,62 @@
             }
         }
 
-        function beforeMiddleDestroy() {
+        const beforeMiddleDestroy =() => {
             if (this.worker) {
                 this.close();
                 this.worker.middlePort.close();
+
             }
         }
 
-        function beforeBackDestroy() {
-            if (this.worker) {
-                this.close();
-                this.worker.backport.close();
+            const beforeBackDestroy = () => {
+                if (this.worker) {
+                    this.close();
+                    this.worker.backport.close();
+                }
             }
-        }
+            const connect = () => {
+                const middleServerURL = "ws://101.37.135.39:8081/Game";
+                const backServerURL = "ws://localhost:8082/Back";
+                //获取socket连接
+                const worker = window.worker || new SharedWorker("sharedWebsocket.js");
+                window.worker = worker;
+                //进入连接后若未连接上可能会阻塞进程
+                worker.port.postMessage({
+                    type: "connect-middle",
+                    URL: middleServerURL,
+                });
+                worker.port.postMessage({
+                    type: 'connect-back ',
+                    URL: backServerURL
+                })
+                if (!this.worker) {
+                    this.worker.port.start();
+                    //监听消息
+                    // 监听 Worker 发来的消息
+                    this.worker.port.onmessage = (e) => {
+                        const {type, region, data} = e.data;
+                        if (type === "middle-message") {
+                            //处理中继服务器发来的信息
+                            handleMessageFromMiddle(data);
+                        } else if (type === "back-message") {
+                            //处理后端服务器发来的通知
+                            handleMessageFromBack(data);
+                        }
+                    }
+
+                }
+
+            }
+
+
+            function update() {
+            }
+
+
+
+
+
 
 </script>
 </body>

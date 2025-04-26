@@ -29,10 +29,22 @@ public class frontServerEndpoint {
      * 前端与后端的连接
      */
     Session session;
+    /**
+     * 临时存放room数据
+     */
     Room room = new Room();
+    /**
+     * 存放owner数据，方便进行操作
+     */
     User owner = new User();
+    /**
+     * 存放guest数据，方便进行房客的相关操作
+     */
     User guest = new User();
     UserServiceImp userServiceImp = new UserServiceImp();
+    /**
+     * 存放棋子数据的容器
+     */
     Chess chess = new Chess();
     ChessStyleControllerImp chessStyleControllerImp = new ChessStyleControllerImp();
     /**
@@ -117,8 +129,21 @@ public class frontServerEndpoint {
                 }else{
                     //将棋子数据传递到chess中
                     if(chessStyleControllerImp.insertChess(chessStyleId,chess)){
-                        //获取下棋后棋子的位置的结果
+                        //获取下棋后棋子的位置的结果，通过结果将发送指令到前端
                         int end = chessStyleControllerImp.isWin(chessStyleId,chess);
+                        switch (end){
+                            case 0:
+                                //禁手指令，前端直接处理为失败指令
+                                sendStringInfo("forbid");
+                                break;
+                            case 1:
+                                //不直接决定结果，不进行操作
+                                break;
+                            case 2:
+                                //连成五子，结果判为胜
+                                sendStringInfo("victory");
+                                break;
+                        }
                     }
                 }
             }else if("startGame".equals(infoParts[0])){

@@ -87,7 +87,9 @@
                                     this.loginUser.id = response.data.gamerId;
                                     alert("登录成功");
                                     localStorage.setItem("Authorization",response.data.Authorization);
-                                    localStorage.setItem("gamerId",this.loginUser.id)
+                                    //将用户数据传递给主界面
+                                    const operator = {id :this.loginUser.id,name: this.loginUser.name}
+                                    localStorage.setItem("operator", operator);
                                     window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Game/Major.html','_self');
                                 }else{
                                     alert("登录失败："+response.data.message);

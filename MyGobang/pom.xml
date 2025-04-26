@@ -29,7 +29,6 @@
             <artifactId>jaxen</artifactId>
             <version>1.1-beta-4</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
@@ -91,6 +90,22 @@
             <artifactId>tomcat7-maven-plugin</artifactId>
             <version>2.2</version>
         </plugin>
+<!--        <plugin>-->
+<!--            <groupId>org.apache.tomcat.maven</groupId>-->
+<!--            <artifactId>tomcat7-maven-plugin</artifactId>-->
+<!--            <version>2.2</version>-->
+<!--            <configuration>-->
+<!--                &lt;!&ndash; 给Maven自带的Tomcat 7更改端口(默认时为8080)；-->
+<!--                更改端口的目的是：不占用Tomcat 9的端口，让Tomcat 9可以使用 &ndash;&gt;-->
+<!--                <port>9090</port>-->
+<!--                <path>/MavenDemo01/demo01</path> &lt;!&ndash; 设置Tomcat 7访问该Maven中web资源的虚拟路径 &ndash;&gt;-->
+<!--                <url>http://localhost:8080/manager/text</url> &lt;!&ndash; 在Maven中使用Tomcat 9必须要添加manager &ndash;&gt;-->
+<!--                <server>tomcat9</server> &lt;!&ndash; 必须与Maven的setting.xml中的id相同 &ndash;&gt;-->
+<!--                <username>tomcat</username>-->
+<!--                <password>tomcat</password>-->
+<!--                <update>true</update>-->
+<!--            </configuration>-->
+<!--        </plugin>-->
     </plugins>
 </build>
 </project>

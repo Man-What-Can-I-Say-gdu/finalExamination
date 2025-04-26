@@ -48,60 +48,195 @@
 <div id="roomWindow" class="roomWindow">
     <div class="ownerAvatar">
         <el-avatar :size="100" :src="circleUrl"></el-avatar>
-        <div class="sub-title">{{owner.name}}</div>
+        <div class="sub-title">{{operator.name}}</div>
     </div>
     <div class="exitButton">
-        <el-button type="danger" @click="$exit()">退出房间</el-button>
+        <el-button type="danger" @click="exit()">退出房间</el-button>
     </div>
-
-
-
     <div class="guestAvatar">
         <el-avatar :size="100" :src="circleUrl"></el-avatar>
-        <div class="sub-title">{{guest.name}}</div>
+        <div class="sub-title">{{opponent.name}}</div>
     </div>
     <div class="StartGamerButton">
-        <el-button type="warning" @click="$startGamer()" round size="medium">开始游戏</el-button>
+        <el-button type="warning" @click="start()" round size="medium">开始游戏</el-button>
     </div>
 </div>
 </body>
 
 <script>
-
     new Vue({
         el:"#roomWindow",
         data(){
             return{
-                User:{
+                operator:{
                     id:'',
                     name:'',
                     email:'',
-                    phoneNumber:''
+                    phoneNumber:'',
+                    //操作者在房间中的身份：房主或房客
+                    type:''
+                },
+                opponent:{
+                    id:'',
+                    name:'',
+                    email:'',
+                    phoneNumber:'',
+                    //对手在房间中的身份：房主或房客
+                    type:''
                 },
                 Room:{
+                    //密码不储存在前端，防止泄露
                     roomId:'',
                     guestId:0,
                     ownerId:0,
-                    password:'',
                     isPublic:false
                 },
-                owner:{
-                    id:'',
-                    name:'',
-                    email:'',
-                    phoneNumber:''
-                },
-                guest:{
-                    id:'',
-                    name:'',
-                    email:'',
-                    phoneNumber:''
+            }
+
+        },
+        methods:{
+            start(){
+                //向服务器发送开始游戏的指令
+                window.open('Game.html','_self');
+                sendToMiddle("start");
+            },
+            exit(){
+                //退出房间，要向服务器和后端发送退出指令,先判断在房间中的身份
+                if(this.operator.type === owner){
+                    sendToBack("OwnerExit");
+                    sendToMiddle("OwnerRoom");
+                }else{
+                    sendToMiddle("GuestOutOfRoom")
+                    sendToBack("GuestOutOfRoom")
+                }
+            },
+            responseToInstructionStartGame(){
+                //响应服务器的游戏启动指令，将双方数据加载到游戏界面中进行展示
+                window.localStorage.setItem('owner', JSON.stringify(this.operator));
+                window.localStorage.setItem('guest', JSON.stringify(this.opponent));
+                window.open('http://localhost:63342/MyGobang/MyGobang/src/main/webapp/Game/Game.html','_self')
+            }
+
+        },
+        created(){
+            //初始化连接
+
+            //获取operator对象
+            //this.data().operator = localStorage.getItem("operator");
+            this.operator.name = "潇洒哥"
+            alert(this.operator)
+            alert("进入connectd")
+            connect();
+            alert("成功连接")
+        },
+        connect() {
+            const middleServerURL = "ws://101.37.135.39:8081/Game";
+            const backServerURL = "ws://localhost:8082/Back";
+            //获取socket连接
+            const worker = window.worker || new SharedWorker("sharedWebsocket.js");
+            window.worker = worker;
+            //进入连接后若未连接上可能会阻塞进程
+            worker.port.postMessage({
+                type: "connect-middle",
+                URL: middleServerURL,
+            });
+            worker.port.postMessage({
+                type: 'connect-back ',
+                URL: backServerURL
+            })
+            if (!this.worker) {
+                this.worker.port.start();
+                //监听消息
+                // 监听 Worker 发来的消息
+                this.worker.port.onmessage = (e) => {
+                    const {type, data} = e.data;
+                    if (type === "middle-message") {
+                        //处理中继服务器发来的信息
+                        handleMessageFromMiddle(data);
+                    } else if (type === "back-message") {
+                        //处理后端服务器发来的通知
+                        handleMessageFromBack(data);
+                    }
+                }
+
+            }
+
+            function handleMessageFromMiddle(data) {
+                if (typeof data.data === "string") {
+                    let info = data.data;
+                    let infoParts = info.split(".")
+                    if (infoParts.length === 2) {
+                        switch (infoParts[0]) {
+                            case "roomInfo":
+                                updateRoomInfo()
+                                sendToBack(data)
+                                break;
+                            case "startGame":
+                                //直接调用worker中的sendToBack方法实现转发
+                                worker.sendToBack(data)
+                                //跳转到Game界面
+                                this.responseToInstructionStartGame()
+                                break;
+                        }
+                    } else if (infoParts.length === 1) {
+                        switch (info) {
+                            case "OwnerExit":
+                                exchangeOwner();
+                                break;
+                            case "GuestOutOfRoom":
+                                clearGuestData();
+                                break;
+                        }
+                    }
+                } else {
+                    //用户的二进制数据,格式为：指令+类型名
+                    let info = String.fromCharCode(data.data)
+                    this.opponent = JSON.parse(info.split(".")[1]);
+                }
+
+            }
+
+            function handleMessageFromBack(data) {
+                if (typeof data === 'string') {
+                    //传入的数据类型为字符串
+                    let info = data.split(".");
+                    if (info.length === 2) {
+                        //携带数据
+                        switch (info[0]) {
+                        }
+                    } else {
+                        //不携带数据
+                        switch (info) {
+                            case "RoomInfoError" || "GuestIdError":
+                                alert(info)
+                        }
+                    }
+                } else {
+                    //后端发送的数据只有用户的数据，此时直接进行传输
+                    sendToMiddle(data)
                 }
             }
+
+            //房间数据更新,传入新房间数据
+            function updateRoomInfo(data) {
+                this.Room.isPublic = data.isPublic;
+            }
+
+            //房主退出房间，房间控制权交给房客
+            function exchangeOwner() {
+                this.opponent = null;
+                this.operator.type = "owner";
+            }
+
+            function clearGuestData() {
+                //房客退出后将房客数据清空
+                this.opponent.id = 0;
+                this.opponent.name = '';
+                this.opponent.email = '';
+                this.opponent.phoneNumber = '';
+            }
         }
-
-
-    })
+        })
 
 </script>
 </html>

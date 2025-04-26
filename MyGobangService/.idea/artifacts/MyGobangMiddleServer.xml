@@ -1,0 +1,27 @@
+<component name="ArtifactManager">
+  <artifact type="war" name="MyGobangMiddleServer">
+    <output-path>$PROJECT_DIR$/out/artifacts/MyGobangMiddleServer</output-path>
+    <root id="archive" name="MyGobangMiddleServer.war">
+      <element id="directory" name="WEB-INF">
+        <element id="directory" name="classes">
+          <element id="module-output" name="MyGobangService" />
+        </element>
+        <element id="directory" name="lib">
+          <element id="library" level="project" name="Maven: com.alibaba.fastjson2:fastjson2:2.0.56" />
+          <element id="library" level="project" name="Maven: javax.websocket:javax.websocket-api:1.1" />
+          <element id="library" level="project" name="Maven: org.apache.directory.studio:org.apache.commons.codec:1.8" />
+          <element id="library" level="project" name="Maven: commons-codec:commons-codec:1.8" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-server:9.4.46.v20220331" />
+          <element id="library" level="project" name="Maven: javax.servlet:javax.servlet-api:3.1.0" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-http:9.4.46.v20220331" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-util:9.4.46.v20220331" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-io:9.4.46.v20220331" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-servlet:9.4.46.v20220331" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-security:9.4.46.v20220331" />
+          <element id="library" level="project" name="Maven: org.eclipse.jetty:jetty-util-ajax:9.4.46.v20220331" />
+        </element>
+      </element>
+      <element id="javaee-facet-resources" facet="MyGobangService/web/Web" />
+    </root>
+  </artifact>
+</component>

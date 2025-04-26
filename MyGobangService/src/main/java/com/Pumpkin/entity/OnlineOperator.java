@@ -29,6 +29,19 @@ public class OnlineOperator {
      */
     private int operatorId;
 
+    /**
+     * 用户的游戏数据
+     */
+    private Gamer gamer;
+
+    public Gamer getGamer() {
+        return gamer;
+    }
+
+    public void setGamer(Gamer gamer) {
+        this.gamer = gamer;
+    }
+
     public int getOperatorId() {
         return operatorId;
     }
@@ -64,10 +77,11 @@ public class OnlineOperator {
     public OnlineOperator() {
     }
 
-    public OnlineOperator(Session session, roomIdentity identity, OnlineOperator.gameIdentity gameIdentity, int operatorId) {
+    public OnlineOperator(Session session, roomIdentity identity, OnlineOperator.gameIdentity gameIdentity, int operatorId, Gamer gamer) {
         this.session = session;
         this.identity = identity;
         this.gameIdentity = gameIdentity;
         this.operatorId = operatorId;
+        this.gamer = gamer;
     }
 }

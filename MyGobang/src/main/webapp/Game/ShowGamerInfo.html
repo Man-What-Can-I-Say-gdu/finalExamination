@@ -346,6 +346,137 @@ Vue.component('showGamerInfo',showGamerInfo)
                 Gamer: Vue.computed(()=>this.Gamer),
                 Authorization:  Vue.computed(()=>this.Authorization)
             }
+        },
+        exitFromMiddle() {
+            if (this.middleServerWs) {
+                this.middleServerWs.close();
+                this.middleServerWs = null;
+            }
+        },
+        exitFromBack() {
+            if (this.backServerWs) {
+                this.backServerWs.close();
+                this.backServerWs = null;
+            }
+        },
+        middleServerSend() {
+            if (this.middleServerWs) {
+                this.middleServerWs.send(this.message);
+            } else {
+                alert("未连接到服务器");
+            }
+        },
+        backServerSend(){
+            if(this.backServerWs){
+                this.backServerWs.send(this.message)
+            }else{
+                alert("未连接到服务器");
+            }
+        },
+        sendToMiddle() {
+            if (this.messageToSend.trim() && this.worker) {
+                this.worker.middlePort.postMessage({
+                    type: 'send',
+                    data: this.messageToSend
+                });
+                this.messages.push(`发送: ${this.messageToSend}`);
+                this.messageToSend = '';
+            }
+        },
+        sendToBack() {
+            if (this.messageToSend.trim() && this.worker) {
+                this.worker.backPort.postMessage({
+                    type: 'send',
+                    data: this.messageToSend
+                });
+                this.messages.push(`发送: ${this.messageToSend}`);
+                this.messageToSend = '';
+            }
+        },
+        closeMiddle() {
+            if (this.worker) {
+                this.worker.middlePort.postMessage({
+                    type: 'close'
+                });
+            }
+        },
+        closeBack() {
+            if (this.worker) {
+                this.worker.BackPort.postMessage({
+                    type: 'close'
+                });
+            }
+        },
+        beforeMiddleDestroy() {
+            if (this.worker) {
+                this.close();
+                this.worker.middlePort.close();
+            }
+        },
+        beforeBackDestroy() {
+            if (this.worker) {
+                this.close();
+                this.worker.backport.close();
+            }
+        },
+        connect() {
+            const middleServerURL = "ws://101.37.135.39:8081/Game";
+            const backServerURL = "ws://localhost:8082/Back";
+            //获取socket连接
+            const worker = window.worker || new SharedWorker("sharedWebsocket.js");
+            window.worker = worker;
+            //进入连接后若未连接上可能会阻塞进程
+            worker.port.postMessage({
+                type: "connect-middle",
+                URL: middleServerURL,
+            });
+            worker.port.postMessage({
+                type: 'connect-back ',
+                URL: backServerURL
+            })
+            if (!this.worker) {
+                this.worker.port.start();
+                //监听消息
+                // 监听 Worker 发来的消息
+                this.worker.port.onmessage = (e) => {
+                    const {type, region, data} = e.data;
+                    if (type === "middle-message") {
+                        //处理中继服务器发来的信息
+                        this.handleMessageFromMiddle(data);
+                    } else if (type === "back-message") {
+                        //处理后端服务器发来的通知
+                        handleMessageFromBack(data);
+                    }
+                }
+
+            }
+
+        },
+        //处理服务器发送到前端的指令
+        handleMessageFromMiddle(event){
+            if(typeof event.data === 'string'){
+                let info = event.data.split(".");
+                if(info.length === 2){
+                    //携带数据传输指令
+                }else{
+                    switch(info){
+
+                    }
+                }
+            }else{
+
+            }
+        },
+        handleMessageFromBack(event){
+            if(typeof event.data === 'string'){
+                let info = event.data.split(".");
+                if(info.length === 2){
+                    //携带数据传输指令
+                }else{
+                    //简单指令传输
+                }
+            }else {
+            }
         }
     })
 </script>

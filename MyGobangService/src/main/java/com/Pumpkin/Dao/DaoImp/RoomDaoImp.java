@@ -1,5 +1,6 @@
 package com.Pumpkin.Dao.DaoImp;
 
+import com.Pumpkin.Controller.GameController;
 import com.Pumpkin.Dao.RoomMapper;
 import com.Pumpkin.DataBasePool.ConnectionPool;
 import com.Pumpkin.entity.Room;

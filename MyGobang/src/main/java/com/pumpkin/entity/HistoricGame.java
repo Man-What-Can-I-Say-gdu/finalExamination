@@ -3,8 +3,17 @@ package com.pumpkin.entity;
 import com.ibm.icu.text.SimpleDateFormat;
 
 public class HistoricGame {
+    /**
+     * 对局id
+     */
     private String gameId;
+    /**
+     * 游戏开始时间
+     */
     private String startTime;
+    /**
+     * 游戏结束时间
+     */
     private String endTime;
     /**
      * 标记赢家，0为黑棋赢，1为白棋赢
